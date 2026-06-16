@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Castor Troy Ricafort — AI-Native Software Engineer</title>
+  <meta name="description" content="Castor Troy Ricafort — AI-native software engineer in Cebu. Full-stack (Spring Boot, Angular, AWS) with an AI-first workflow: Claude Code, Codex, OpenCode & spec-driven development." />
+  <meta name="theme-color" content="#0a0b0e" />
+  <!-- Inline SVG favicon: terminal-style ">_" mark, no extra request -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0b0e'/><polyline points='9,10 15,16 9,22' fill='none' stroke='%23ff7d54' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/><line x1='17' y1='22' x2='24' y2='22' stroke='%236ee7a8' stroke-width='2.6' stroke-linecap='round'/></svg>" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Castor Troy Ricafort — AI-Native Software Engineer" />
+  <meta property="og:description" content="Full-stack engineer who ships at AI speed." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body id="top">
+
+  <!-- Animated background -->
+  <div class="bg" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <!-- ===== Header / nav (anchors scroll to sections) ===== -->
+  <header class="site-header">
+    <div class="container nav">
+      <a href="#top" class="brand"><span class="sigil">✻</span> castor_troy<span class="blink">_</span></a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a class="nav-link" href="#about">about</a></li>
+        <li><a class="nav-link" href="#stack">stack</a></li>
+        <li><a class="nav-link" href="#experience">experience</a></li>
+        <li><a class="nav-link" href="#projects">projects</a></li>
+        <li><a class="nav-link" href="#contact">contact</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a class="btn btn--ghost" href="assets/resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <!-- left: pitch -->
+        <div class="hero-copy">
+          <div class="hero-stats reveal" style="transition-delay:0ms">
+            <div class="stat"><div class="n">5,000+</div><div class="l">students served / campus</div></div>
+            <div class="stat"><div class="n">95%+</div><div class="l">data-pipeline accuracy</div></div>
+            <div class="stat"><div class="n">3+ yrs</div><div class="l">shipping production code</div></div>
+          </div>
+          <h1 class="display reveal" style="transition-delay:80ms">
+            Software engineer<br />who ships <span class="grad">at AI speed.</span>
+          </h1>
+          <p class="lead reveal" style="transition-delay:160ms">
+            I'm <strong style="color:var(--text)">Castor Troy</strong> — a software engineer at
+            Synacy. I pair solid full-stack fundamentals with an
+            <span class="mono" style="color:var(--coral)">AI-native</span> workflow:
+            Claude&nbsp;Code, Codex, OpenCode and spec-driven development do the heavy
+            lifting while I steer the architecture.
+          </p>
+          <div class="hero-cta reveal" style="transition-delay:240ms">
+            <a class="btn btn--primary" href="#projects">See my work <span class="arrow">↗</span></a>
+            <a class="btn btn--ghost" href="assets/resume.pdf" target="_blank" rel="noopener">Download résumé ↓</a>
+          </div>
+        </div>
+
+        <!-- right: a Claude Code terminal that "boots" into a Pokémon-style battle -->
+        <div class="scene reveal" style="transition-delay:200ms">
+          <!-- floating tool-icon chips -->
+          <span class="chip chip-a"><img class="ti" src="assets/icons/claude.svg" alt="" />Claude Code</span>
+          <span class="chip chip-b"><img class="ti" src="assets/icons/aws.svg" alt="" />AWS</span>
+          <span class="chip chip-c"><img class="ti" src="assets/icons/spring.svg" alt="" />Spring Boot</span>
+
+          <div class="term term--battle booting" id="term-battle">
+            <!-- window chrome -->
+            <div class="term-bar">
+              <span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span>
+              <span class="t-title">claude-code — castor@portfolio</span>
+              <span class="t-state"><span class="dotpulse"></span>live</span>
+            </div>
+
+            <!-- the arena (decorative game scene) — boots in after the terminal opens -->
+            <div class="arena" aria-hidden="true">
+              <div class="combatant c-claude" id="foe">
+                <div class="plate">
+                  <div class="pname"><span>Clawd</span><span class="lvl">Lv.∞</span></div>
+                  <div class="ctx"><span class="lab">ctx</span><span class="track"><span class="fill coral" id="foe-ctx"></span></span></div>
+                  <div class="tok"><b id="foe-tok">200K</b> / 200K tokens</div>
+                </div>
+                <div class="stage"><div class="claude-sprite">
+                  <!-- Clawd: the real Claude Code robot mascot (pixel art, background keyed out) -->
+                  <img class="cc-avatar" src="assets/images/clawd.png" alt="Clawd, the Claude Code robot mascot" />
+                </div></div>
+              </div>
+              <div class="combatant c-player" id="hero">
+                <div class="stage"><div class="trainer">
+                  <!-- Castor as a Pokémon trainer (provided pixel art, background keyed out) -->
+                  <img class="trainer-img" src="assets/images/pokemon.png" alt="Castor, as a Pokémon trainer" />
+                </div></div>
+                <div class="plate">
+                  <div class="pname"><span>Castor</span><span class="lvl">Lv.25</span></div>
+                  <div class="ctx"><span class="lab">ctx</span><span class="track"><span class="fill green" id="hero-ctx"></span></span></div>
+                  <div class="tok"><b id="hero-tok">200K</b> / 200K tokens</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Claude Code-styled dialog + interactive moves -->
+            <div class="battle-box">
+              <div class="dialog" id="battle-log" aria-live="polite"></div>
+              <div class="moves">
+                <button class="move" type="button" data-move="argue"><span class="mi">💢</span> Argue</button>
+                <button class="move" type="button" data-move="ship"><span class="mi">🚀</span> Ship it</button>
+                <button class="move" type="button" data-move="refactor"><span class="mi">🔧</span> Refactor</button>
+                <button class="move" type="button" data-move="who"><span class="mi">👤</span> Who is Castor?</button>
+              </div>
+              <form class="cmd" id="cmd-form" autocomplete="off">
+                <span class="ps">❯</span>
+                <input id="cmd-input" type="text" placeholder="type a command… try &ldquo;help&rdquo;" aria-label="Optional command line" />
+                <span class="opt">optional</span>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== About ===== -->
+    <section class="section" id="about">
+      <div class="container">
+        <p class="eyebrow"><b>✻</b> about</p>
+        <p class="prompt-echo reveal"><span class="ps">❯</span> cat ~/about/whoami.md</p>
+        <div class="about-grid">
+          <div class="prose reveal">
+            <h2 style="margin-bottom:1.25rem">Engineer first.<br />AI-native by default.</h2>
+            <p>
+              I'm a software engineer who treats AI tools as part of the stack, not a
+              gimmick. Day to day I design <strong>event-driven data pipelines</strong>,
+              ship containerized services on <strong>AWS</strong>, and build full-stack
+              apps with <strong>Spring Boot</strong> and <strong>Angular</strong> — while
+              leaning on Claude Code, Codex and OpenCode to move faster without cutting
+              corners.
+            </p>
+            <p>
+              I'm a strong believer in <strong>spec-driven development</strong>: writing
+              the intent down first (with frameworks like OpenSpec) so the AI builds the
+              right thing, and the codebase stays one a teammate can actually pick up.
+              I graduated top of my Computer Engineering class at CIT-U in 2025 and like
+              problems that mix hardware, data, and clean software.
+            </p>
+          </div>
+          <div class="about-side reveal">
+            <div class="row"><div class="k">Role</div><div class="v">Software Engineer @ Synacy</div></div>
+            <div class="row"><div class="k">Based in</div><div class="v">Cebu City, Philippines</div></div>
+            <div class="row"><div class="k">Education</div><div class="v">BS Computer Engineering — CIT-U</div></div>
+            <div class="row"><div class="k">Honors</div><div class="v">Top Academic Achiever 2025 · CIT-U Research Congress 2nd Placer</div></div>
+            <div class="row"><div class="k">Focus</div><div class="v">Web apps · APIs · Cloud · IoT</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Stack ===== -->
+    <section class="section" id="stack">
+      <div class="container">
+        <p class="eyebrow"><b>✻</b> the stack</p>
+        <h2 class="reveal" style="margin-bottom:0.75rem">An AI-native toolbelt</h2>
+        <p class="lead reveal" style="margin-bottom:1.25rem">The agents and assistants I build with every day.</p>
+        <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> claude --list-agents <span class="c"># my daily drivers</span></p>
+
+        <div class="toolbelt">
+          <div class="tool reveal"><div class="glyph"><img class="ti" src="assets/icons/claude.svg" alt="" /></div><h3>Claude Code</h3><p>My primary pair — refactors, features, reviews, and the occasional argument.</p></div>
+          <div class="tool reveal"><div class="glyph"><img class="ti" src="assets/icons/openai.svg" alt="" /></div><h3>OpenAI Codex</h3><p>Second opinion and quick generation when I want another model's take.</p></div>
+          <div class="tool reveal"><div class="glyph">⧉</div><h3>OpenCode</h3><p>Open, terminal-first agent for hacking in the shell where I live.</p></div>
+          <div class="tool reveal"><div class="glyph"><img class="ti" src="assets/icons/copilot.svg" alt="" /></div><h3>GitHub Copilot</h3><p>Inline autocomplete for the small stuff, right inside the editor.</p></div>
+          <div class="tool reveal"><div class="glyph">▤</div><h3>OpenSpec (SDD)</h3><p>Spec-driven development — write the intent first, let agents build to it.</p></div>
+        </div>
+
+        <div class="stack-grid">
+          <div class="stack-group reveal">
+            <h3>Languages</h3>
+            <div class="tags">
+              <span class="tag"><img class="ti" src="assets/icons/java.svg" alt="" />Java</span>
+              <span class="tag"><img class="ti" src="assets/icons/typescript.svg" alt="" />TypeScript</span>
+              <span class="tag"><img class="ti" src="assets/icons/csharp.svg" alt="" />C#</span>
+              <span class="tag"><img class="ti" src="assets/icons/python.svg" alt="" />Python</span>
+              <span class="tag"><img class="ti" src="assets/icons/dart.svg" alt="" />Dart</span>
+              <span class="tag"><img class="ti" src="assets/icons/arduino.svg" alt="" />Arduino C++</span>
+              <span class="tag"><img class="ti" src="assets/icons/c.svg" alt="" />C</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <h3>Frameworks</h3>
+            <div class="tags">
+              <span class="tag"><img class="ti" src="assets/icons/spring.svg" alt="" />Spring Boot</span>
+              <span class="tag"><img class="ti" src="assets/icons/angular.svg" alt="" />Angular</span>
+              <span class="tag"><img class="ti" src="assets/icons/react.svg" alt="" />React</span>
+              <span class="tag"><img class="ti" src="assets/icons/nodejs.svg" alt="" />Node.js</span>
+              <span class="tag"><img class="ti" src="assets/icons/express.svg" alt="" />Express.js</span>
+              <span class="tag"><img class="ti" src="assets/icons/flutter.svg" alt="" />Flutter</span>
+              <span class="tag"><img class="ti" src="assets/icons/dotnet.svg" alt="" />.NET</span>
+              <span class="tag">Spock</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <h3>Cloud &amp; DevOps</h3>
+            <div class="tags">
+              <span class="tag"><img class="ti" src="assets/icons/aws.svg" alt="" />AWS ECS</span>
+              <span class="tag"><img class="ti" src="assets/icons/aws.svg" alt="" />AWS CDK</span>
+              <span class="tag"><img class="ti" src="assets/icons/aws.svg" alt="" />AWS S3</span>
+              <span class="tag"><img class="ti" src="assets/icons/aws.svg" alt="" />CodePipeline</span>
+              <span class="tag"><img class="ti" src="assets/icons/docker.svg" alt="" />Docker</span>
+              <span class="tag"><img class="ti" src="assets/icons/linux.svg" alt="" />Linux</span>
+              <span class="tag">CI/CD</span><span class="tag">Render</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <h3>Databases</h3>
+            <div class="tags">
+              <span class="tag"><img class="ti" src="assets/icons/postgresql.svg" alt="" />PostgreSQL</span>
+              <span class="tag"><img class="ti" src="assets/icons/mongodb.svg" alt="" />MongoDB</span>
+              <span class="tag"><img class="ti" src="assets/icons/mysql.svg" alt="" />MySQL</span>
+              <span class="tag"><img class="ti" src="assets/icons/firebase.svg" alt="" />Firebase</span>
+              <span class="tag">SQL</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <h3>AI &amp; Automation</h3>
+            <div class="tags">
+              <span class="tag"><img class="ti" src="assets/icons/claude.svg" alt="" />Claude Code</span>
+              <span class="tag"><img class="ti" src="assets/icons/openai.svg" alt="" />Codex</span>
+              <span class="tag">OpenCode</span>
+              <span class="tag"><img class="ti" src="assets/icons/copilot.svg" alt="" />Copilot</span>
+              <span class="tag">OpenSpec</span>
+              <span class="tag"><img class="ti" src="assets/icons/n8n.svg" alt="" />n8n</span>
+              <span class="tag">Make</span><span class="tag">Power Automate</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Experience ===== -->
+    <section class="section" id="experience">
+      <div class="container">
+        <p class="eyebrow"><b>✻</b> experience</p>
+        <h2 class="reveal" style="margin-bottom:1.75rem">Where I've worked</h2>
+
+        <div class="term term--xp reveal">
+          <div class="term-bar">
+            <span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span>
+            <span class="t-title">castor@career: ~/experience — zsh</span>
+            <span class="t-state">claude</span>
+          </div>
+          <div class="xp-body">
+            <p class="xp-line"><span class="ps">❯</span> claude <span class="str">"walk me through your experience"</span></p>
+            <p class="xp-line out"><span class="spark">✻</span> Sure — here are the last three roles, newest first:</p>
+
+            <div class="timeline">
+              <div class="entry reveal">
+                <span class="when">July 2025 — Present</span>
+                <div class="entry-head"><h3>Software Engineer</h3><span class="org">Synacy</span></div>
+                <ul>
+                  <li>Designed event-driven data pipelines (webhooks, REST, n8n) with ETL into AWS S3 — lifting data accuracy to 95%+ and cutting manual handling 30–40%.</li>
+                  <li>Built middleware for two-way CRM sync and deployed containerized services on AWS ECS, with infrastructure as code via AWS CDK and CI/CD pipelines.</li>
+                  <li>Shipped daily with AI-assisted development — Claude Code, OpenAI Codex, and OpenCode.</li>
+                </ul>
+              </div>
+              <div class="entry reveal">
+                <span class="when">June 2025 — July 2025</span>
+                <div class="entry-head"><h3>Software Developer Intern</h3><span class="org">Lexmark / Xerox</span></div>
+                <ul>
+                  <li>Led a company-wide workflow &amp; transition system on the Power Platform with role-based access control, improving cross-department efficiency by 65%.</li>
+                  <li>Automated notifications and Teams provisioning, integrating Microsoft Graph APIs with custom JSON payloads.</li>
+                </ul>
+              </div>
+              <div class="entry reveal">
+                <span class="when">August 2024 — June 2025</span>
+                <div class="entry-head"><h3>Software Developer</h3><span class="org">Freelance / Contract</span></div>
+                <ul>
+                  <li>Designed a multi-campus school administration system serving 5,000+ students per campus, cutting manual processing by 60%.</li>
+                  <li>Delivered production projects with Spring Boot, React, Firebase, Docker, and PostgreSQL as a working student.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Projects ===== -->
+    <section class="section" id="projects">
+      <div class="container">
+        <p class="eyebrow"><b>✻</b> selected projects</p>
+        <h2 class="reveal" style="margin-bottom:1.25rem">Things I've built</h2>
+        <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> ls -la ~/projects <span class="c"># a couple of favorites</span></p>
+        <div class="project-grid">
+          <article class="card reveal">
+            <span class="role">Lead Software &amp; Firmware Developer</span>
+            <h3>TAMBAL-PD</h3>
+            <span class="kind">IoT · Smart Medicine Management</span>
+            <p>
+              A Flutter + Firebase app paired with a custom ESP32 smart medicine dispenser —
+              biometric authentication, automated dispensing, and cloud sync. Deployed in an
+              elderly-care facility, improving medication adherence for 30 residents.
+            </p>
+            <div class="ctags"><span>Flutter</span><span>Firebase</span><span>ESP32</span><span>Arduino C++</span></div>
+          </article>
+          <article class="card reveal">
+            <span class="role">Lead Backend Developer</span>
+            <h3>Sisters of Mary — School Admin</h3>
+            <span class="kind">Web · 5,000+ students / campus</span>
+            <p>
+              A school operations &amp; records platform built on Spring Boot: enrollment
+              workflows, student records, and role-based access. REST APIs over PostgreSQL,
+              deployed for reliable multi-campus access.
+            </p>
+            <div class="ctags"><span>Spring Boot</span><span>PostgreSQL</span><span>REST</span><span>RBAC</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Contact ===== -->
+    <section class="section contact" id="contact">
+      <div class="container">
+        <p class="eyebrow" style="display:block"><b>✻</b> contact</p>
+        <h2 class="display reveal">Let's build something <span class="grad">good.</span></h2>
+        <p class="lead reveal" style="margin:0 auto 1rem">Have a role, a project, or just want to talk shop about AI-native dev? My inbox is open.</p>
+        <a class="contact-mail reveal" href="mailto:castortroyricafort@gmail.com"><span class="grad">castortroyricafort@gmail.com</span></a>
+        <ul class="social-list reveal">
+          <li><a class="social-link" href="https://github.com/castorrr" target="_blank" rel="noopener">GitHub ↗</a></li>
+          <li><a class="social-link" href="https://linkedin.com/in/castortroyricafort" target="_blank" rel="noopener">LinkedIn ↗</a></li>
+          <li><a class="social-link" href="assets/resume.pdf" target="_blank" rel="noopener">Résumé ↓</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© <span data-year>2026</span> Castor Troy Ricafort — built from scratch, no templates.</span>
+      <a href="#top">back to top ↑</a>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

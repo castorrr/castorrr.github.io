@@ -14,15 +14,25 @@
   var toggle = document.querySelector(".nav-toggle");
   var navLinks = document.querySelector(".nav-links");
   if (toggle && navLinks) {
+    var closeNav = function () {
+      navLinks.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    };
     toggle.addEventListener("click", function () {
       var open = navLinks.classList.toggle("open");
       toggle.setAttribute("aria-expanded", String(open));
     });
     navLinks.addEventListener("click", function (e) {
-      if (e.target.closest(".nav-link")) {
-        navLinks.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
+      if (e.target.closest(".nav-link")) closeNav();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && navLinks.classList.contains("open")) {
+        closeNav();
+        toggle.focus();
       }
+    });
+    document.addEventListener("click", function (e) {
+      if (navLinks.classList.contains("open") && !e.target.closest(".site-header")) closeNav();
     });
   }
 

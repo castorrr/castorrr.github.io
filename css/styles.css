@@ -29,6 +29,7 @@
   --font-mono:    "JetBrains Mono", ui-monospace, Menlo, monospace;
 
   --container: 78rem;
+  --nav-h: 4.6rem;
   --radius: 14px;
   --radius-sm: 8px;
 
@@ -42,8 +43,12 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 6rem; /* offset for sticky header on anchor jumps */
+  scroll-padding-top: calc(var(--nav-h) + 1.4rem); /* offset for sticky header on anchor jumps */
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--bg-3) var(--bg); /* dark scrollbar to match the theme */
+  /* no rubber-band at the top — swiping down at scroll 0 used to drag the
+     whole page (header included) down and snap back */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -55,6 +60,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior-y: none; /* some browsers read this from <body>, not <html> */
 }
 
 img { max-width: 100%; display: block; }
@@ -142,6 +148,7 @@ h1, h2, h3 {
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .display {
   font-size: clamp(2.8rem, 8vw, 5.75rem);
@@ -198,15 +205,16 @@ p { max-width: 62ch; }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  backdrop-filter: saturate(1.3) blur(14px);
+  /* solid — a translucent + backdrop-filter header let the hero's display
+     text bleed through legibly and flickered mid-scroll in Chromium */
+  background: var(--bg);
   border-bottom: 1px solid var(--line-2);
 }
 .nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 4.6rem;
+  height: var(--nav-h);
 }
 .brand {
   display: inline-flex;
@@ -258,8 +266,10 @@ p { max-width: 62ch; }
 .nav-toggle {
   display: none;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 5px;
-  width: 2.5rem; height: 2.5rem;
+  width: 2.75rem; height: 2.75rem; /* ≥44px touch target */
   background: none; border: none; cursor: pointer;
 }
 .nav-toggle span {
@@ -274,7 +284,9 @@ p { max-width: 62ch; }
 .hero { padding-block: clamp(2.5rem, 7vw, 5rem) clamp(3rem, 8vw, 6rem); }
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0,…) — a bare 1fr can't shrink below the terminal's min-content
+     width (its one-line title bar), which used to force page overflow */
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(2.5rem, 6vw, 4rem);
   align-items: center;
 }
@@ -284,7 +296,7 @@ p { max-width: 62ch; }
 .hero-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem 2.5rem;
+  gap: 1.25rem 1.9rem;
   margin-bottom: 1.75rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--line-2);
@@ -298,10 +310,10 @@ p { max-width: 62ch; }
 }
 .hero-stats .stat .l {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   color: var(--text-faint);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   margin-top: 0.4rem;
 }
 
@@ -346,6 +358,8 @@ p { max-width: 62ch; }
 .term-bar .dot.g { background: #28c840; }
 .term-bar .t-title {
   margin-left: 0.3rem;
+  flex: 1;
+  min-width: 0; /* let the flex item shrink so the ellipsis can kick in */
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .term-bar .t-state {
@@ -466,6 +480,7 @@ p { max-width: 62ch; }
   border-radius: 9px;
   padding: 0.4rem 0.6rem;
   min-width: 8.5rem;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 .plate .pname {
@@ -549,6 +564,7 @@ p { max-width: 62ch; }
   font-size: 0.72rem;
   padding: 0.34rem 0.7rem;
   background: color-mix(in srgb, var(--bg-3) 90%, transparent);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   border: 1px solid var(--line);
   border-radius: 100px;
@@ -556,9 +572,11 @@ p { max-width: 62ch; }
   box-shadow: 0 10px 30px -16px rgba(0,0,0,0.9);
   animation: floatChip 7s ease-in-out infinite;
 }
-.chip-a { top: -3%;  left: -5%;  animation-delay: -0.5s; }
-.chip-b { bottom: 30%; right: -7%; animation-delay: -2.4s; }
-.chip-c { bottom: -3%; left: 12%; animation-delay: -3.6s; }
+/* hug the terminal's corners/edges — small offsets so nothing covers the
+   dialog text or command input, and nothing pokes past the viewport */
+.chip-a { top: -0.9rem;  left: -1.1rem;  animation-delay: -0.5s; }
+.chip-b { top: 42%; right: -1.1rem; animation-delay: -2.4s; }
+.chip-c { bottom: -0.9rem; left: 9%; animation-delay: -3.6s; }
 @keyframes floatChip { 50% { transform: translateY(-9px); } }
 
 /* ---- About ------------------------------------------------ */
@@ -588,9 +606,14 @@ p { max-width: 62ch; }
 /* ---- AI toolbelt (feature row) ---------------------------- */
 .toolbelt {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: 1rem;
   margin-bottom: 3.5rem;
+}
+/* exactly five tools — keep them on one row once there's room,
+   instead of stranding an orphan card on a second row */
+@media (min-width: 64rem) {
+  .toolbelt { grid-template-columns: repeat(5, 1fr); }
 }
 .tool {
   position: relative;
@@ -630,7 +653,7 @@ p { max-width: 62ch; }
 /* ---- Stack (categorized tags) ----------------------------- */
 .stack-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 2rem;
 }
 .stack-group h3 {
@@ -663,8 +686,9 @@ p { max-width: 62ch; }
   font-size: 0.86rem;
   color: var(--text-soft);
 }
-.prompt-echo .ps { color: var(--coral); margin-right: 0.55rem; }
-.prompt-echo .c  { color: var(--text-faint); }
+.prompt-echo .ps  { color: var(--coral); margin-right: 0.55rem; }
+.prompt-echo .c   { color: var(--text-faint); }
+.prompt-echo .str { color: var(--green); }
 
 /* Experience rendered as a terminal session */
 .term--xp { margin-top: 0.5rem; }
@@ -714,7 +738,8 @@ p { max-width: 62ch; }
 /* ---- Projects --------------------------------------------- */
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  /* min(100%,…) keeps the track floor from exceeding tiny viewports */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: 1.25rem;
 }
 .card {
@@ -754,11 +779,13 @@ p { max-width: 62ch; }
   display: inline-block;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(1.4rem, 5vw, 2.8rem);
+  /* sized so the address stays on ONE line down to ~320px viewports —
+     break-all used to orphan a single "m" onto its own line */
+  font-size: clamp(1rem, 5.5vw, 2.8rem);
   letter-spacing: -0.02em;
   position: relative;
   margin-top: 0.5rem;
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 .contact-mail .grad { transition: opacity var(--dur); }
 .contact-mail:hover { opacity: 0.85; }
@@ -791,35 +818,70 @@ p { max-width: 62ch; }
 
 /* ---- Responsive ------------------------------------------- */
 @media (min-width: 60rem) {
-  .hero-grid { grid-template-columns: 1.05fr 0.95fr; align-items: start; }
+  .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: start; }
   .hero-copy { padding-top: 0.5rem; }
   .about-grid { grid-template-columns: 1.4fr 1fr; }
 }
 @media (max-width: 52rem) {
+  /* The dropdown is anchored to the sticky header (position:absolute — NOT
+     fixed: the header's backdrop-filter makes it the containing block for
+     fixed descendants, which used to park the "hidden" menu on top of page
+     content). Closed = invisible AND unfocusable, not just translated away. */
   .nav-links {
-    position: fixed;
-    inset: 4.6rem 0 auto 0;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch; /* full-width rows = full-width tap targets */
     gap: 0;
     background: var(--bg-2);
     border-bottom: 1px solid var(--line);
     padding: 0.5rem clamp(1.25rem, 5vw, 3.5rem) 1.5rem;
-    transform: translateY(-140%);
-    transition: transform 0.45s var(--ease);
+    opacity: 0;
+    transform: translateY(-0.6rem);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.35s var(--ease), opacity 0.3s var(--ease),
+                visibility 0s 0.35s;
   }
-  .nav-links.open { transform: translateY(0); }
-  .nav-link { width: 100%; padding: 0.9rem 0; border-bottom: 1px solid var(--line-2); font-size: 1rem; }
+  .nav-links.open {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 0.35s var(--ease), opacity 0.3s var(--ease),
+                visibility 0s;
+  }
+  .nav-link {
+    display: block;
+    width: 100%;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 1rem;
+  }
   .nav-link::after { display: none; }
   .nav-toggle { display: flex; }
   .nav-cta .btn { display: none; } /* hide resume btn on small; it's in contact anyway */
 }
-/* The floating tool-chips sit OUTSIDE the terminal at negative offsets, so
-   they only have room in the two-column hero (≥60rem). Below that the terminal
-   is full-width and a chip like "AWS" (right:-7%) hangs off the edge and gets
-   clipped by overflow-x:hidden — so hide them until the two-column layout. */
-@media (max-width: 60rem) {
+/* The floating tool-chips poke slightly past the terminal's edges; below a
+   two-column hero with generous margins there's no room, so hide them. */
+@media (max-width: 64rem) {
   .chip { display: none; }
+}
+
+/* ---- Small screens: battle terminal ergonomics ------------- */
+@media (max-width: 52rem) {
+  /* tighter arena so the two combatants don't float in dead space */
+  .arena { height: clamp(14rem, 78vw, 19.25rem); }
+  .c-claude { top: 0.75rem; right: 0.75rem; }
+  .c-player { left: 0.75rem; bottom: 0.75rem; }
+
+  /* comfortable touch targets for the move buttons */
+  .move { padding: 0.85rem 0.9rem; }
+
+  /* ≥16px stops iOS Safari from force-zooming the page on focus */
+  .cmd input { font-size: 1rem; }
+  .cmd { padding: 0.65rem 0.7rem; }
 }
 
 /* ---- Reduced motion --------------------------------------- */
@@ -831,5 +893,4 @@ p { max-width: 62ch; }
     scroll-behavior: auto !important;
   }
   .reveal { opacity: 1; transform: none; }
-  .avatar-ring, .avatar-ring img { animation: none; }
 }

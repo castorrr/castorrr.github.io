@@ -861,7 +861,10 @@ p { max-width: 62ch; }
   }
   .nav-link::after { display: none; }
   .nav-toggle { display: flex; }
-  .nav-cta .btn { display: none; } /* hide resume btn on small; it's in contact anyway */
+  /* Hide the whole CTA wrapper, not just the .btn: an empty .nav-cta stays a
+     flex item and space-between pins it to the right edge, shoving the burger
+     to the center. Résumé is reachable from the contact section anyway. */
+  .nav-cta { display: none; }
 }
 /* The floating tool-chips poke slightly past the terminal's edges; below a
    two-column hero with generous margins there's no room, so hide them. */

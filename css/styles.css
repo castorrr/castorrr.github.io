@@ -816,7 +816,7 @@ p { max-width: 62ch; }
 .term--stats { margin-top: 0.5rem; }
 .cs-body { padding: clamp(1.25rem, 3.5vw, 2rem); }
 /* reuse the hero-stats look; just tighten it inside the card */
-.cs-stats { margin-bottom: 1.6rem; padding-bottom: 1.4rem; }
+.cs-stats { margin-bottom: 1.6rem; padding-bottom: 1.4rem; justify-content: center; }
 
 /* the grid has a fixed intrinsic width — this wrapper absorbs the overflow.
    Known trap in this codebase: any grid/flex ancestor on the path would need
@@ -838,7 +838,7 @@ p { max-width: 62ch; }
   grid-template-columns: auto 1fr;
   gap: 4px 8px;
   width: max-content;
-  /* when the 16px cap leaves spare width, sit centered instead of
+  /* when the 20px cap leaves spare width, sit centered instead of
      left-hugging; when cells bottom out at 11px the graph overflows
      into .cs-scroll exactly as before */
   margin-inline: auto;
@@ -850,7 +850,7 @@ p { max-width: 62ch; }
     --cell: clamp(
       11px,
       (100cqw - 38px - (var(--cs-weeks, 53) - 1) * 3px) / var(--cs-weeks, 53),
-      16px
+      20px
     );
   }
 }
@@ -901,6 +901,8 @@ p { max-width: 62ch; }
   font-size: 0.72rem;
   color: var(--text-faint);
   margin-top: 1.1rem;
+  text-align: right;
+  max-width: none;             /* escape the global 62ch prose cap on p */
 }
 
 /* ---- Scroll reveal ---------------------------------------- */

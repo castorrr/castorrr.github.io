@@ -207,6 +207,51 @@ class TokenLoadTest(unittest.TestCase):
         self.assertEqual(uca.load_daily_tokens(self.cache), {"2026-07-10": 7})
 
 
+class MergeTokensTest(unittest.TestCase):
+    def _ledger(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-07-10"] = {"m": 5, "s": 1, "t": 2}
+        return ledger
+
+    def test_merges_into_existing_day(self):
+        ledger = self._ledger()
+        self.assertTrue(uca.merge_tokens(ledger, {"2026-07-10": 2000}))
+        self.assertEqual(ledger["days"]["2026-07-10"],
+                         {"m": 5, "s": 1, "t": 2, "tok": 2000})
+
+    def test_token_only_dates_do_not_create_days(self):
+        # stats-cache has ~2 token-only dates with no counted messages;
+        # creating them would corrupt activeDays semantics
+        ledger = self._ledger()
+        self.assertFalse(uca.merge_tokens(ledger, {"2026-07-09": 999}))
+        self.assertNotIn("2026-07-09", ledger["days"])
+
+    def test_seeded_days_receive_tokens(self):
+        # token merge is exempt from the seededThrough guard: the source
+        # covers full history and never regresses from pruning
+        ledger = self._ledger()
+        ledger["seededThrough"] = "2026-07-10"
+        self.assertTrue(uca.merge_tokens(ledger, {"2026-07-10": 2000}))
+        self.assertEqual(ledger["days"]["2026-07-10"]["tok"], 2000)
+
+    def test_absent_date_preserves_existing_tok(self):
+        ledger = self._ledger()
+        ledger["days"]["2026-07-10"]["tok"] = 1234
+        self.assertFalse(uca.merge_tokens(ledger, {}))
+        self.assertEqual(ledger["days"]["2026-07-10"]["tok"], 1234)
+
+    def test_identical_merge_reports_no_change(self):
+        ledger = self._ledger()
+        uca.merge_tokens(ledger, {"2026-07-10": 2000})
+        self.assertFalse(uca.merge_tokens(ledger, {"2026-07-10": 2000}))
+
+    def test_changed_value_updates_tok(self):
+        ledger = self._ledger()
+        uca.merge_tokens(ledger, {"2026-07-10": 2000})
+        self.assertTrue(uca.merge_tokens(ledger, {"2026-07-10": 2500}))
+        self.assertEqual(ledger["days"]["2026-07-10"]["tok"], 2500)
+
+
 class CliTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -158,6 +158,30 @@ def load_daily_tokens(path):
     return tokens
 
 
+def merge_tokens(ledger, daily_tokens):
+    """Merge per-day token totals into existing ledger days as "tok".
+
+    Unlike upsert_days this is exempt from the seededThrough and horizon
+    guards: stats-cache covers the entire history and never regresses from
+    transcript pruning (so the first run after deploy backfills every
+    historic day). Only days already present in the ledger receive "tok" —
+    token-only dates are skipped to keep activeDays semantics intact. A day
+    absent from daily_tokens keeps any existing "tok" untouched, so token
+    data can be added or corrected but never silently wiped.
+
+    Returns True if any day's "tok" actually changed.
+    """
+    changed = False
+    for date, tok in daily_tokens.items():
+        day = ledger["days"].get(date)
+        if day is None:
+            continue
+        if day.get("tok") != tok:
+            day["tok"] = tok
+            changed = True
+    return changed
+
+
 def recompute_totals(ledger):
     days = ledger["days"]
     ledger["totals"] = {

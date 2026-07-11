@@ -107,8 +107,15 @@ def load_ledger(path):
         return json.load(fh)
 
 
-def upsert_days(ledger, scanned):
+def upsert_days(ledger, scanned, horizon=None):
     """Replace ledger days with scanned values. Never touch dates <= seededThrough.
+
+    horizon guards finalized days against partially-pruned rescans: Claude Code
+    prunes transcripts after ~30 days, so a day scanned again near the edge of
+    that window can come back with a smaller (partial) count than what was
+    already finalized in the ledger. When horizon is truthy, any scanned date
+    older than it is skipped so a stale partial rescan can't clobber the
+    correct value. Pass None (the default) to disable this filtering.
 
     Returns True if any day actually changed (idempotent re-runs return False).
     """
@@ -116,6 +123,8 @@ def upsert_days(ledger, scanned):
     changed = False
     for date, counts in scanned.items():
         if date <= seeded_through:
+            continue
+        if horizon and date < horizon:
             continue
         if ledger["days"].get(date) != counts:
             ledger["days"][date] = counts
@@ -167,8 +176,13 @@ def seed_ledger(ledger, cache, seeded_through):
 
 
 def run_git(repo, *args):
-    result = subprocess.run(["git", "-C", str(repo), *args],
-                            check=True, capture_output=True, text=True)
+    try:
+        result = subprocess.run(["git", "-C", str(repo), *args],
+                                check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as exc:
+        if exc.stderr:
+            print(exc.stderr, file=sys.stderr, end="")
+        raise
     return result.stdout.strip()
 
 
@@ -227,7 +241,8 @@ def main(argv=None):
         seed_ledger(ledger, cache, boundary)
         print(f"seeded {boundary} and earlier from {args.stats_cache}")
 
-    changed = upsert_days(ledger, scanned)
+    horizon = (datetime.fromisoformat(max(scanned)) - timedelta(days=25)).date().isoformat()
+    changed = upsert_days(ledger, scanned, horizon)
     if not changed and not args.seed:
         print("no change; ledger untouched")
         if use_git:

@@ -2,7 +2,9 @@
 
 Run: python3 scripts/test_update_claude_activity.py -v
 """
+import contextlib
 import importlib.util
+import io
 import json
 import subprocess
 import tempfile
@@ -128,6 +130,22 @@ class LedgerTest(unittest.TestCase):
         changed = uca.upsert_days(ledger, {"2026-06-10": {"m": 1, "s": 1, "t": 1}})
         self.assertFalse(changed)
         self.assertEqual(ledger["days"]["2026-06-10"], {"m": 100, "s": 4, "t": 9})
+
+    def test_upsert_skips_partially_pruned_days_before_horizon(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-06-01"] = {"m": 100, "s": 5, "t": 40}
+        changed = uca.upsert_days(
+            ledger, {"2026-06-01": {"m": 3, "s": 1, "t": 0}}, horizon="2026-06-16")
+        self.assertFalse(changed)
+        self.assertEqual(ledger["days"]["2026-06-01"], {"m": 100, "s": 5, "t": 40})
+
+    def test_upsert_applies_days_on_or_after_horizon(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-06-20"] = {"m": 100, "s": 5, "t": 40}
+        changed = uca.upsert_days(
+            ledger, {"2026-06-20": {"m": 3, "s": 1, "t": 0}}, horizon="2026-06-16")
+        self.assertTrue(changed)
+        self.assertEqual(ledger["days"]["2026-06-20"], {"m": 3, "s": 1, "t": 0})
 
     def test_totals_recomputed_from_days(self):
         ledger = uca.new_ledger()
@@ -309,6 +327,13 @@ class GitSyncTest(unittest.TestCase):
         self.run_cli()  # scan unchanged -> no new commit, but push-if-ahead fires
         self.assertEqual(self._git(self.origin, "rev-parse", "main"),
                          self._git(self.clone, "rev-parse", "main"))
+
+    def test_run_git_failure_surfaces_stderr(self):
+        captured = io.StringIO()
+        with contextlib.redirect_stderr(captured):
+            with self.assertRaises(subprocess.CalledProcessError):
+                uca.run_git(self.clone, "rev-parse", "--verify", "no-such-ref-xyz")
+        self.assertIn("fatal", captured.getvalue())
 
 
 if __name__ == "__main__":

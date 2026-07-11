@@ -132,6 +132,32 @@ def upsert_days(ledger, scanned, horizon=None):
     return changed
 
 
+def load_daily_tokens(path):
+    """Read stats-cache dailyModelTokens into {"YYYY-MM-DD": total_tokens}.
+
+    Token data is best-effort: a missing or unreadable cache returns {} so
+    the run proceeds without a token merge (existing "tok" values are then
+    left untouched by merge_tokens).
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            cache = json.load(fh)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return {}
+    tokens = {}
+    for entry in cache.get("dailyModelTokens", []):
+        if not isinstance(entry, dict):
+            continue
+        date = entry.get("date")
+        by_model = entry.get("tokensByModel")
+        if not date or not isinstance(by_model, dict):
+            continue
+        total = sum(v for v in by_model.values() if isinstance(v, (int, float)))
+        if total:
+            tokens[date] = int(total)
+    return tokens
+
+
 def recompute_totals(ledger):
     days = ledger["days"]
     ledger["totals"] = {

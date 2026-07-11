@@ -175,6 +175,38 @@ class LedgerTest(unittest.TestCase):
                          uca.new_ledger())
 
 
+class TokenLoadTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.cache = Path(self.tmp.name) / "stats-cache.json"
+
+    def test_sums_tokens_across_models_per_day(self):
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"date": "2026-07-10",
+             "tokensByModel": {"claude-opus-4-8": 1500, "claude-sonnet-5": 500}},
+            {"date": "2026-07-11", "tokensByModel": {"claude-fable-5": 42}},
+        ]}))
+        self.assertEqual(uca.load_daily_tokens(self.cache),
+                         {"2026-07-10": 2000, "2026-07-11": 42})
+
+    def test_missing_file_returns_empty(self):
+        self.assertEqual(uca.load_daily_tokens(self.cache), {})
+
+    def test_malformed_json_returns_empty(self):
+        self.cache.write_text("{not json")
+        self.assertEqual(uca.load_daily_tokens(self.cache), {})
+
+    def test_malformed_entries_and_zero_days_skipped(self):
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"tokensByModel": {"claude-opus-4-8": 5}},              # no date
+            {"date": "2026-07-09"},                                  # no tokensByModel
+            {"date": "2026-07-08", "tokensByModel": {"claude-opus-4-8": 0}},  # zero total
+            {"date": "2026-07-10", "tokensByModel": {"claude-opus-4-8": 7}},
+        ]}))
+        self.assertEqual(uca.load_daily_tokens(self.cache), {"2026-07-10": 7})
+
+
 class CliTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

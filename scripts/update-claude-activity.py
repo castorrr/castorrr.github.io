@@ -2,7 +2,7 @@
 """Maintain data/claude-activity.json — a day-level ledger of Claude Code usage.
 
 Privacy: this script reads ONLY local Claude Code usage metadata (message /
-session / tool-call counts per day) from ~/.claude. No prompts, no conversation
+session / tool-call / token counts per day) from ~/.claude. No prompts, no conversation
 content, no project names, and no credentials are read, stored, or published.
 The output is aggregate day-level counts only.
 
@@ -117,6 +117,9 @@ def upsert_days(ledger, scanned, horizon=None):
     older than it is skipped so a stale partial rescan can't clobber the
     correct value. Pass None (the default) to disable this filtering.
 
+    Scanned counts never include token data, so an existing day's "tok" is
+    carried over into the replacement dict.
+
     Returns True if any day actually changed (idempotent re-runs return False).
     """
     seeded_through = ledger.get("seededThrough") or ""
@@ -126,8 +129,65 @@ def upsert_days(ledger, scanned, horizon=None):
             continue
         if horizon and date < horizon:
             continue
-        if ledger["days"].get(date) != counts:
+        existing = ledger["days"].get(date)
+        # scanned counts never carry token data — carry over an existing
+        # "tok" so a rescan can't strip what merge_tokens wrote
+        if existing and "tok" in existing:
+            counts = dict(counts, tok=existing["tok"])
+        if existing != counts:
             ledger["days"][date] = counts
+            changed = True
+    return changed
+
+
+def load_daily_tokens(path):
+    """Read stats-cache dailyModelTokens into {"YYYY-MM-DD": total_tokens}.
+
+    Token data is best-effort: a missing or unreadable cache returns {} so
+    the run proceeds without a token merge (existing "tok" values are then
+    left untouched by merge_tokens).
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            cache = json.load(fh)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return {}
+    if not isinstance(cache, dict):
+        return {}
+    tokens = {}
+    for entry in cache.get("dailyModelTokens", []):
+        if not isinstance(entry, dict):
+            continue
+        date = entry.get("date")
+        by_model = entry.get("tokensByModel")
+        if not date or not isinstance(by_model, dict):
+            continue
+        total = sum(v for v in by_model.values() if isinstance(v, (int, float)))
+        if total:
+            tokens[date] = int(total)
+    return tokens
+
+
+def merge_tokens(ledger, daily_tokens):
+    """Merge per-day token totals into existing ledger days as "tok".
+
+    Unlike upsert_days this is exempt from the seededThrough and horizon
+    guards: stats-cache covers the entire history and never regresses from
+    transcript pruning (so the first run after deploy backfills every
+    historic day). Only days already present in the ledger receive "tok" —
+    token-only dates are skipped to keep activeDays semantics intact. A day
+    absent from daily_tokens keeps any existing "tok" untouched, so token
+    data can be added or corrected but never silently wiped.
+
+    Returns True if any day's "tok" actually changed.
+    """
+    changed = False
+    for date, tok in daily_tokens.items():
+        day = ledger["days"].get(date)
+        if day is None:
+            continue
+        if day.get("tok") != tok:
+            day["tok"] = tok
             changed = True
     return changed
 
@@ -139,6 +199,7 @@ def recompute_totals(ledger):
         "messages": sum(d["m"] for d in days.values()),
         "toolCalls": sum(d["t"] for d in days.values()),
         "activeDays": len(days),
+        "tokens": sum(d.get("tok", 0) for d in days.values()),
     }
     ledger["firstDate"] = min(days) if days else None
 
@@ -243,7 +304,10 @@ def main(argv=None):
 
     horizon = (datetime.fromisoformat(max(scanned)) - timedelta(days=25)).date().isoformat()
     changed = upsert_days(ledger, scanned, horizon)
-    if not changed and not args.seed:
+    # after upsert/seed so newly created days get tokens in the same run;
+    # exempt from seededThrough/horizon — see merge_tokens docstring
+    tokens_changed = merge_tokens(ledger, load_daily_tokens(args.stats_cache))
+    if not changed and not tokens_changed and not args.seed:
         print("no change; ledger untouched")
         if use_git:
             sync_git(args.repo, max(scanned))  # still push a stranded commit

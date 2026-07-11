@@ -11,13 +11,13 @@ trainer) vs. Clawd, the Claude Code robot mascot — fought over the
 
 ```
 yort-portfolio/
-├── index.html        One scrollable page: Hero · About · Stack · Experience · Projects · Contact
+├── index.html        One scrollable page: Hero · Claude Stats · About · Stack · Experience · Projects · Contact
 ├── css/
 │   └── styles.css    The whole theme (CSS variables at the top control everything)
 ├── js/
 │   └── main.js       Nav toggle · scrollspy · scroll-reveal · the typing terminal
 ├── data/
-│   └── claude-activity.json   Day-level Claude Code usage counts (auto-updated daily)
+│   └── claude-activity.json   Day-level Claude Code usage counts + token totals (auto-updated daily)
 ├── scripts/
 │   ├── update-claude-activity.py          Rebuilds data/claude-activity.json from local logs
 │   ├── test_update_claude_activity.py     Its unit tests (python3 scripts/test_update_claude_activity.py)
@@ -83,11 +83,22 @@ through About, Stack, and Projects.
 
 ## Claude activity data
 
-The `#claude-stats` section renders `data/claude-activity.json` — a ledger of
-my Claude Code usage maintained by `scripts/update-claude-activity.py` on a
-daily systemd user timer. **Privacy:** only day-level aggregate counts
-(messages, sessions, tool calls per day) are ever published. No prompts, no
-conversation content, no project names, and no credentials leave my machine.
+The `#claude-stats` section (and the live hero stat strip) render
+`data/claude-activity.json` — a ledger of my Claude Code usage maintained by
+`scripts/update-claude-activity.py` on a daily systemd user timer. Each day
+holds `{"m": messages, "s": sessions, "t": toolCalls, "tok": tokens}` (`tok`
+appears once stats-cache has computed that day — typically all but the most
+recent day or two); `tok` and `totals.tokens` are summed per day across
+models from Claude Code's own `~/.claude/stats-cache.json`
+(`dailyModelTokens`), which covers the full history and isn't subject to
+transcript pruning — so the first run after deploy backfills tokens for all
+historic days automatically. If stats-cache is missing or unreadable the
+run simply proceeds without a token merge; existing `tok` values are never
+wiped. The hero strip ships with baked floor-rounded fallbacks (`72K+` /
+`92M+` / `20d+`) that JS swaps for exact values when the JSON loads.
+**Privacy:** only day-level aggregate counts (messages, sessions, tool
+calls, tokens per day) are ever published. No prompts, no conversation
+content, no project names, and no credentials leave my machine.
 
 **Setup** (one-time, run only after this feature is merged to `main`):
 
@@ -100,6 +111,16 @@ This clones a dedicated copy of the repo to
 so the scheduled job always runs merged `main`, not whatever's checked out
 locally) and installs a systemd user timer that runs the update script daily
 at 21:00.
+
+The update script itself does a `git pull --rebase` in that clone at the
+start of every run — but since it's already loaded into memory by the time
+that pull happens, the first run after merging changes to
+`scripts/update-claude-activity.py` still executes the *previous* script
+version; the pull only readies the clone for the run after that. So after
+merging a script change, run
+`git -C ~/.local/share/claude-activity/repo pull --rebase` once yourself
+(before the next scheduled tick) to make the very next run pick up the new
+code.
 
 **Check it ran:**
 

@@ -373,10 +373,12 @@
 })();
 
 /* ============================================================
-   Claude stats — contribution heatmap
-   Fetches data/claude-activity.json when the section approaches
-   (same IntersectionObserver pattern as the battle boot). On any
-   failure the whole section hides — never a broken layout.
+   Claude stats — hero strip + contribution heatmap
+   Fetches data/claude-activity.json immediately on load (~7KB)
+   and renders both the hero stat strip and the stats card from
+   the same response. On any failure the stats section hides and
+   the hero strip keeps its baked fallback values — never a
+   broken layout.
    ============================================================ */
 (function () {
   "use strict";
@@ -399,6 +401,19 @@
   function dayMs(iso) { return Date.parse(iso + "T00:00:00Z"); }
   function isoDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
   function fmt(n) { return Number(n).toLocaleString("en-US"); }
+
+  // 92899456 → "92.9M" · 1200000000 → "1.2B" · 950 → "950"
+  function fmtCompact(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(n);
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
 
   function quartiles(values) {
     var sorted = values.slice().sort(function (a, b) { return a - b; });
@@ -432,10 +447,24 @@
     var dates = Object.keys(days).sort();
     if (!dates.length) { hideSection(); return; }
 
-    document.getElementById("cs-sessions").textContent = fmt(data.totals.sessions || 0);
-    document.getElementById("cs-messages").textContent = fmt(data.totals.messages || 0);
-    document.getElementById("cs-active").textContent = fmt(data.totals.activeDays || dates.length);
-    document.getElementById("cs-streak").textContent = longestStreak(dates) + "d";
+    var streak = longestStreak(dates);
+    var tokens = data.totals.tokens || 0;
+
+    // hero strip — swap the baked floor values for exact live ones
+    setText("hs-messages", fmt(data.totals.messages || 0));
+    setText("hs-streak", streak + "d");
+    if (tokens) setText("hs-tokens", fmtCompact(tokens));
+
+    // stats-card tiles (tokens tile stays hidden on stale token-less JSON)
+    setText("cs-sessions", fmt(data.totals.sessions || 0));
+    setText("cs-messages", fmt(data.totals.messages || 0));
+    setText("cs-active", fmt(data.totals.activeDays || dates.length));
+    setText("cs-streak", streak + "d");
+    var tokensTile = document.getElementById("cs-tokens-tile");
+    if (tokensTile && tokens) {
+      setText("cs-tokens", fmtCompact(tokens));
+      tokensTile.hidden = false;
+    }
 
     // grid runs from the Sunday on/before firstDate through "today" (the
     // ledger's own generatedAt date — not the viewer's clock)
@@ -448,6 +477,11 @@
     if (start < minStart) {
       start = minStart - new Date(minStart).getUTCDay() * DAY;
     }
+
+    // CSS sizes cells to fill the card width from the week count
+    var weeks = Math.floor((end - start) / (7 * DAY)) + 1;
+    var graph = section.querySelector(".cs-graph");
+    if (graph) graph.style.setProperty("--cs-weeks", String(weeks));
 
     var qs = quartiles(dates.map(function (d) { return days[d].m; })
                             .filter(function (m) { return m > 0; }));
@@ -478,7 +512,8 @@
           cell.title = MONTHS[d.getUTCMonth()] + " " + d.getUTCDate() +
             " · " + fmt(m) + " messages" +
             " · " + fmt(entry ? entry.s : 0) + " sessions" +
-            " · " + fmt(entry ? entry.t : 0) + " tool calls";
+            " · " + fmt(entry ? entry.t : 0) + " tool calls" +
+            (entry && entry.tok ? " · " + fmt(entry.tok) + " tokens" : "");
         }
         cells.appendChild(cell);
       }
@@ -492,22 +527,13 @@
     if (scroller) scroller.scrollLeft = scroller.scrollWidth;
   }
 
-  function load() {
-    fetch("data/claude-activity.json", { cache: "no-cache" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      })
-      .then(render)
-      .catch(hideSection);
-  }
-
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting) { io.disconnect(); load(); }
-    }, { rootMargin: "300px 0px" });
-    io.observe(section);
-  } else {
-    load();
-  }
+  // eager fetch — the data feeds the above-the-fold hero strip, so don't
+  // wait for the section to scroll into view
+  fetch("data/claude-activity.json", { cache: "no-cache" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(render)
+    .catch(hideSection);
 })();

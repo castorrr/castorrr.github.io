@@ -166,12 +166,25 @@ def seed_ledger(ledger, cache, seeded_through):
     ledger["seededThrough"] = seeded_through
 
 
-def run_git(repo, *args):  # implemented in Task 5
-    raise SystemExit("git integration not implemented yet")
+def run_git(repo, *args):
+    result = subprocess.run(["git", "-C", str(repo), *args],
+                            check=True, capture_output=True, text=True)
+    return result.stdout.strip()
 
 
-def sync_git(repo, max_date):  # implemented in Task 5
-    raise SystemExit("git integration not implemented yet")
+def sync_git(repo, max_date):
+    """Commit the ledger if the working tree changed, then push if ahead.
+
+    Pushing whenever HEAD is ahead of upstream (not only right after a commit)
+    means a run whose push failed gets healed by the next run automatically.
+    """
+    if run_git(repo, "status", "--porcelain", str(LEDGER_REL)):
+        run_git(repo, "add", str(LEDGER_REL))
+        run_git(repo, "commit", "-m",
+                f"chore: update claude activity through {max_date}")
+    ahead = int(run_git(repo, "rev-list", "--count", "@{upstream}..HEAD"))
+    if ahead:
+        run_git(repo, "push")
 
 
 def main(argv=None):

@@ -249,5 +249,67 @@ class SeedTest(unittest.TestCase):
             self.run_seed()
 
 
+class GitSyncTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+
+        # origin: bare repo with one initial commit on main
+        self.origin = root / "origin.git"
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(self.origin)],
+                       check=True, capture_output=True)
+        seed = root / "seedclone"
+        subprocess.run(["git", "clone", str(self.origin), str(seed)],
+                       check=True, capture_output=True)
+        self._git(seed, "config", "user.email", "test@test")
+        self._git(seed, "config", "user.name", "test")
+        (seed / "README.md").write_text("init\n")
+        self._git(seed, "add", "README.md")
+        self._git(seed, "commit", "-m", "init")
+        self._git(seed, "push", "origin", "main")
+
+        # the "dedicated clone" the script operates on
+        self.clone = root / "clone"
+        subprocess.run(["git", "clone", str(self.origin), str(self.clone)],
+                       check=True, capture_output=True)
+        self._git(self.clone, "config", "user.email", "test@test")
+        self._git(self.clone, "config", "user.name", "test")
+
+        self.projects = root / "projects"
+        proj = self.projects / "proj-a"
+        proj.mkdir(parents=True)
+        (proj / "s1.jsonl").write_text(msg() + "\n")
+
+    def _git(self, cwd, *args):
+        return subprocess.run(["git", "-C", str(cwd), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def run_cli(self):
+        return uca.main(["--repo", str(self.clone),
+                         "--projects-dir", str(self.projects)])
+
+    def test_run_commits_and_pushes_when_changed(self):
+        self.assertEqual(self.run_cli(), 0)
+        subject = self._git(self.origin, "log", "-1", "--format=%s", "main")
+        self.assertEqual(subject,
+                         "chore: update claude activity through 2026-07-11")
+
+    def test_second_run_adds_no_commit(self):
+        self.run_cli()
+        self.run_cli()
+        self.assertEqual(self._git(self.origin, "rev-list", "--count", "main"),
+                         "2")  # init + exactly one update
+
+    def test_stranded_local_commit_pushed_on_next_run(self):
+        self.run_cli()
+        # simulate a failed push: roll origin back one commit; clone is now ahead
+        prev = self._git(self.origin, "rev-parse", "main~1")
+        self._git(self.origin, "update-ref", "refs/heads/main", prev)
+        self.run_cli()  # scan unchanged -> no new commit, but push-if-ahead fires
+        self.assertEqual(self._git(self.origin, "rev-parse", "main"),
+                         self._git(self.clone, "rev-parse", "main"))
+
+
 if __name__ == "__main__":
     unittest.main()

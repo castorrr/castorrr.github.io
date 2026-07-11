@@ -89,6 +89,33 @@ daily systemd user timer. **Privacy:** only day-level aggregate counts
 (messages, sessions, tool calls per day) are ever published. No prompts, no
 conversation content, no project names, and no credentials leave my machine.
 
+**Setup** (one-time, run only after this feature is merged to `main`):
+
+```bash
+bash scripts/install-claude-activity-timer.sh
+```
+
+This clones a dedicated copy of the repo to
+`~/.local/share/claude-activity/repo` (kept separate from your working clone
+so the scheduled job always runs merged `main`, not whatever's checked out
+locally) and installs a systemd user timer that runs the update script daily
+at 21:00.
+
+**Check it ran:**
+
+```bash
+systemctl --user list-timers claude-activity.timer --no-pager  # last/next run time
+systemctl --user status claude-activity.service                # last result
+journalctl --user -u claude-activity.service --since today      # full output
+git -C ~/.local/share/claude-activity/repo log --oneline -5     # commits it pushed
+```
+
+**Stop it:**
+
+```bash
+systemctl --user disable --now claude-activity.timer
+```
+
 ## Deploy
 
 Static, so hosting is free: **GitHub Pages** (push + enable Pages on `main`),

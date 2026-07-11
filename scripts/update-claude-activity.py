@@ -197,6 +197,7 @@ def recompute_totals(ledger):
         "messages": sum(d["m"] for d in days.values()),
         "toolCalls": sum(d["t"] for d in days.values()),
         "activeDays": len(days),
+        "tokens": sum(d.get("tok", 0) for d in days.values()),
     }
     ledger["firstDate"] = min(days) if days else None
 

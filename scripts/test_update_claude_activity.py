@@ -164,12 +164,13 @@ class LedgerTest(unittest.TestCase):
     def test_totals_recomputed_from_days(self):
         ledger = uca.new_ledger()
         ledger["days"] = {
-            "2026-07-10": {"m": 5, "s": 1, "t": 2},
-            "2026-07-11": {"m": 7, "s": 2, "t": 4},
+            "2026-07-10": {"m": 5, "s": 1, "t": 2, "tok": 1500},
+            "2026-07-11": {"m": 7, "s": 2, "t": 4},   # no tok — counts as 0
         }
         uca.recompute_totals(ledger)
         self.assertEqual(ledger["totals"], {
-            "sessions": 3, "messages": 12, "toolCalls": 6, "activeDays": 2})
+            "sessions": 3, "messages": 12, "toolCalls": 6, "activeDays": 2,
+            "tokens": 1500})
         self.assertEqual(ledger["firstDate"], "2026-07-10")
 
     def test_write_ledger_roundtrip_preserves_unknown_fields(self):
@@ -294,7 +295,8 @@ class CliTest(unittest.TestCase):
         ledger = json.loads(self.ledger_path.read_text())
         self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
         self.assertEqual(ledger["totals"], {
-            "sessions": 1, "messages": 1, "toolCalls": 0, "activeDays": 1})
+            "sessions": 1, "messages": 1, "toolCalls": 0, "activeDays": 1,
+            "tokens": 0})
         self.assertEqual(ledger["timezone"], "Asia/Manila")
         self.assertTrue(ledger["generatedAt"].startswith("2026-"))
 

@@ -76,6 +76,23 @@ Each `.card` gains:
 Per-card affordance text: `cat tambal-pd.md`, `cat school-admin.md`,
 `cat doxie.md`.
 
+Each card also gains a **status badge** in a `.card-top` flex row (role on the
+left, status on the right):
+
+```html
+<div class="card-top">
+  <span class="role">Creator</span>
+  <span class="status status--live"><i class="dotpulse"></i>live</span>
+</div>
+```
+
+- `status--live` — green, with the existing `.dotpulse` pulse animation (same
+  visual language as the hero terminal's "ready" state): **School Admin** and
+  **Doxie**.
+- `status--thesis` — coral, no dot, reads `thesis`: **TAMBAL-PD**.
+
+The badge is mirrored in each modal's `.pmodal-head`.
+
 The section's prompt-echo comment changes from `# a couple of favorites` to
 `# a few favorites` (there are three now).
 
@@ -83,7 +100,7 @@ The section's prompt-echo comment changes from `# a couple of favorites` to
 
 Third `<article class="card reveal">` in `.project-grid`:
 
-- **role:** `Creator · Hackathon Build`
+- **role:** `Creator` · status badge: `live`
 - **h3:** `Doxie`
 - **kind:** `CLI · AI-Native Documentation`
 - **summary:** "Ship code and docs in one go — a TypeScript CLI that scaffolds an
@@ -158,7 +175,7 @@ Structure notes:
 All facts below come from the current site copy and the Doxie README — nothing
 invented. Enrich with anecdotes/numbers later if desired.
 
-**TAMBAL-PD** (`~/projects/tambal-pd.md`)
+**TAMBAL-PD** (`~/projects/tambal-pd.md`) — status: `thesis`
 
 - *Overview:* "TAMBAL-PD pairs a cross-platform Flutter app with a custom
   ESP32-based smart medicine dispenser. Caregivers schedule medications in the
@@ -171,10 +188,11 @@ invented. Enrich with anecdotes/numbers later if desired.
   - Deployed in an elderly-care facility — improved medication adherence for 30
     residents
   - Led both the software and firmware sides of the build
+  - Computer Engineering thesis project (CIT-U)
 - *Tags:* Flutter · Firebase · ESP32 · Arduino C++
 - *Links:* GitHub ↗ → `https://github.com/castorrr/tambal`
 
-**Sisters of Mary — School Admin** (`~/projects/school-admin.md`)
+**Sisters of Mary — School Admin** (`~/projects/school-admin.md`) — status: `live`
 
 - *Overview:* "An operations and records platform for the Sisters of Mary
   schools, serving 5,000+ students per campus. Built on Spring Boot with REST
@@ -187,7 +205,7 @@ invented. Enrich with anecdotes/numbers later if desired.
 - *Tags:* Spring Boot · PostgreSQL · REST · RBAC
 - *Links:* Live site ↗ → `https://smsgirlstown.online/`
 
-**Doxie** (`~/projects/doxie.md`)
+**Doxie** (`~/projects/doxie.md`) — status: `live`
 
 - *Overview:* "Ship code and docs in one go. Doxie is a TypeScript CLI that
   scaffolds an AI-driven documentation workflow into any repo — so docs are
@@ -199,7 +217,7 @@ invented. Enrich with anecdotes/numbers later if desired.
   - Template-driven: drop a Markdown prompt or TypeScript script under
     `templates/` and it ships — no code changes needed
   - Slash commands run inside Claude Code; scripts run via `tsx`, no build step
-  - Hackathon build with a live landing page
+  - Live landing page and public repo
 - *Tags:* TypeScript · Node.js · Claude Code · CLI
 - *Links:* Site ↗ → `https://castorrr.github.io/doxie/` · GitHub ↗ →
   `https://github.com/castorrr/doxie`
@@ -218,6 +236,12 @@ invented. Enrich with anecdotes/numbers later if desired.
 - `html.modal-open { overflow: hidden; }` — body scroll lock while a dialog is
   open.
 - `.card[data-modal] { cursor: pointer; }`
+- `.card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }`
+- `.status`: mono, ~0.7rem, uppercase, letter-spaced chip.
+  `.status--live { color: var(--green); }` with the shared `.dotpulse` dot
+  (the `pulse` keyframes already exist; the dot is suppressed under
+  `prefers-reduced-motion` the same way other animations are).
+  `.status--thesis { color: var(--coral); }`, no dot.
 - `.card-open`: mono prompt-line button — transparent background, no border,
   `padding-top: 1.1rem`, faint text with coral `❯`; on card hover / button
   focus-visible it brightens to coral. Focus ring via `outline` for

@@ -772,6 +772,37 @@ p { max-width: 62ch; }
   border-radius: 6px;
 }
 
+/* clickable cards: status badge row + prompt-line open affordance */
+.card[data-modal] { cursor: pointer; }
+.card-top {
+  display: flex; align-items: baseline;
+  justify-content: space-between; gap: 0.75rem;
+}
+.status {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  flex: none;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.status--live { color: var(--green); }
+.status--thesis { color: var(--coral); }
+.status .dotpulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2.2s infinite;
+}
+.card-open {
+  background: none; border: 0;
+  padding: 1.1rem 0 0;
+  text-align: left; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--text-faint);
+  transition: color var(--dur) var(--ease);
+}
+.card-open .ps { color: var(--coral); margin-right: 0.55rem; }
+.card:hover .card-open,
+.card-open:focus-visible { color: var(--coral); }
+
 /* ---- Contact ---------------------------------------------- */
 .contact { text-align: center; }
 .contact .display { max-width: 18ch; margin: 0 auto 1.5rem; }

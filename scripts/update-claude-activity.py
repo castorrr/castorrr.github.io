@@ -146,8 +146,24 @@ def write_ledger(path, ledger):
 
 # ---- entry point ------------------------------------------------------------
 
-def seed_ledger(ledger, cache, seeded_through):  # implemented in Task 4
-    raise SystemExit("--seed not implemented yet")
+def seed_ledger(ledger, cache, seeded_through):
+    """One-time import of stats-cache dailyActivity for dates <= seeded_through."""
+    if ledger.get("seededThrough"):
+        raise SystemExit(
+            f"ledger already seeded through {ledger['seededThrough']}; "
+            "--seed is not repeatable")
+    for entry in cache.get("dailyActivity", []):
+        date = entry.get("date")
+        if not date or date > seeded_through:
+            continue
+        counts = {
+            "m": int(entry.get("messageCount", 0)),
+            "s": int(entry.get("sessionCount", 0)),
+            "t": int(entry.get("toolCallCount", 0)),
+        }
+        if counts["m"] or counts["s"] or counts["t"]:
+            ledger["days"][date] = counts
+    ledger["seededThrough"] = seeded_through
 
 
 def run_git(repo, *args):  # implemented in Task 5

@@ -205,5 +205,49 @@ class CliTest(unittest.TestCase):
         self.assertFalse(self.ledger_path.exists())
 
 
+class SeedTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+        self.projects = root / "projects"
+        proj = self.projects / "proj-a"
+        proj.mkdir(parents=True)
+        (proj / "s1.jsonl").write_text(msg() + "\n")  # oldest transcript day: 2026-07-11
+        self.repo = root / "repo"
+        self.repo.mkdir()
+        self.cache = root / "stats-cache.json"
+        self.cache.write_text(json.dumps({
+            "version": 4,
+            "dailyActivity": [
+                {"date": "2026-03-03", "messageCount": 99, "sessionCount": 4, "toolCallCount": 17},
+                {"date": "2026-07-10", "messageCount": 500, "sessionCount": 9, "toolCallCount": 60},
+                {"date": "2026-07-11", "messageCount": 9999, "sessionCount": 99, "toolCallCount": 999},
+            ],
+        }))
+
+    def run_seed(self):
+        return uca.main(["--seed", "--no-git", "--repo", str(self.repo),
+                         "--projects-dir", str(self.projects),
+                         "--stats-cache", str(self.cache)])
+
+    def test_seed_imports_history_and_scan_owns_recent_days(self):
+        self.assertEqual(self.run_seed(), 0)
+        ledger = json.loads((self.repo / "data/claude-activity.json").read_text())
+        # boundary = oldest transcript day (2026-07-11) minus one = 2026-07-10
+        self.assertEqual(ledger["seededThrough"], "2026-07-10")
+        self.assertEqual(ledger["days"]["2026-03-03"], {"m": 99, "s": 4, "t": 17})
+        self.assertEqual(ledger["days"]["2026-07-10"], {"m": 500, "s": 9, "t": 60})
+        # 2026-07-11 must come from the transcript scan, not the cache entry
+        self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
+        self.assertEqual(ledger["firstDate"], "2026-03-03")
+        self.assertEqual(ledger["totals"]["messages"], 99 + 500 + 1)
+
+    def test_seed_refuses_second_run(self):
+        self.run_seed()
+        with self.assertRaises(SystemExit):
+            self.run_seed()
+
+
 if __name__ == "__main__":
     unittest.main()

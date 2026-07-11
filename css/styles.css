@@ -808,6 +808,11 @@ p { max-width: 62ch; }
    terminal window (.term chrome). showModal() gives Esc, focus trap,
    and ::backdrop for free — see the "Project modals" block in main.js. */
 dialog.pmodal {
+  /* .term sets position:relative for its non-dialog uses (battle log, stats,
+     xp cards); restated here with higher specificity so the dialog keeps the
+     UA's viewport-fixed centering instead of centering against the whole
+     scrolled document, which used to defeat the scroll lock below. */
+  position: fixed;
   width: min(100% - 1.5rem, 44rem);
   max-height: min(88dvh, 100dvh - 2rem);
   margin: auto;

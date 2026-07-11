@@ -263,6 +263,39 @@ methodology boundary from §3. Only aggregates are published — no project name
 | 10 | **GitHub Pages deploy latency & caching** | Trivial | ~1 min build; fetch with `cache: "no-cache"` or a `?v=` stamp from a meta tag |
 | 11 | **Git push failure** (auth, network, diverged branch) | Low | Script does `pull --rebase` first, logs failures; next day's run self-heals since upserts are idempotent |
 
+### 6.1 Terms-of-service / compliance check (added after review question)
+
+Verified against Anthropic's Consumer Terms, the Claude Code data-usage docs, and known
+enforcement history (as of July 2026): **this feature does not violate Anthropic's terms.**
+
+- **Reading your own local files is fine.** The official docs openly document the transcript
+  locations (`~/.claude/projects/…`) and data-retention settings; the only warning attached
+  is about format *stability*, not permission. Consumer Terms: you retain rights to your
+  inputs; nothing restricts processing files Claude Code writes to your own disk.
+- **Publishing your own aggregate stats is an anticipated use case.** The official `/stats`
+  command generates shareable images explicitly for posting to social media. We publish
+  strictly less than that: day-level counts, no conversation content.
+- **The daily script never touches Anthropic's services.** The Terms' "automated data
+  extraction" clause targets scraping *their Services*; our script only parses local files
+  and pushes JSON to GitHub. No API calls, no auth tokens involved.
+- **Ecosystem precedent:** ccusage, claude-monitor, cc-time, tokscale, etc. parse the same
+  files, have large public user bases, and show zero documented enforcement actions.
+
+What *would* cross a line (none of which this feature does): extracting/spoofing Claude
+OAuth tokens for third-party harnesses (actively enforced since Jan 2026), account sharing,
+circumventing rate limits, publishing Anthropic system prompts, or using outputs to train a
+competing model.
+
+Guardrail for implementation: a README/comment note that the script reads only local
+aggregate usage counts — no conversation content, no credentials — keeps intent
+unambiguous. (Not legal advice; terms can change — re-skim if Anthropic revises the
+Consumer Terms.)
+
+Sources: [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) ·
+[Data usage docs](https://code.claude.com/docs/en/data-usage.md) ·
+[Sessions/local storage docs](https://code.claude.com/docs/en/sessions.md) ·
+[Analytics docs](https://code.claude.com/docs/en/analytics.md)
+
 ---
 
 ## 7. Open questions for you

@@ -77,11 +77,11 @@ Expected: `playwright ok`
 
 Then start the static server as a **background** task from the repo root (the worktree you're editing):
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8123
 ```
 Verify it's up:
 ```bash
-curl -sI http://localhost:8000/ | head -1
+curl -sI http://localhost:8123/ | head -1
 ```
 Expected: `HTTP/1.0 200 OK`
 
@@ -95,7 +95,7 @@ const { chromium } = require("playwright");
 (async () => {
   const browser = await chromium.launch({ channel: "chrome" });
   const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
-  await page.goto("http://localhost:8000/", { waitUntil: "networkidle" });
+  await page.goto("http://localhost:8123/", { waitUntil: "networkidle" });
   const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
 
   const cards = page.locator(".project-grid .card");
@@ -266,7 +266,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch({ channel: 'chrome' });
   for (const w of [320, 1440]) {
     const p = await b.newPage({ viewport: { width: w, height: 900 } });
-    await p.goto('http://localhost:8000/#projects', { waitUntil: 'networkidle' });
+    await p.goto('http://localhost:8123/#projects', { waitUntil: 'networkidle' });
     await p.waitForTimeout(800);
     await p.screenshot({ path: 'shots/task1-cards-' + w + '.png' });
     await p.close();
@@ -319,7 +319,7 @@ const MODALS = {
 (async () => {
   const browser = await chromium.launch({ channel: "chrome" });
   const page = await browser.newPage({ viewport: { width: 320, height: 700 } });
-  await page.goto("http://localhost:8000/", { waitUntil: "networkidle" });
+  await page.goto("http://localhost:8123/", { waitUntil: "networkidle" });
   const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
 
   for (const [id, exp] of Object.entries(MODALS)) {
@@ -682,7 +682,7 @@ const { chromium } = require("playwright");
 (async () => {
   const browser = await chromium.launch({ channel: "chrome" });
   const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
-  await page.goto("http://localhost:8000/", { waitUntil: "networkidle" });
+  await page.goto("http://localhost:8123/", { waitUntil: "networkidle" });
   const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
   const isOpen = (id) => page.evaluate((id) => document.getElementById(id).open, id);
   const hasLock = () => page.evaluate(() => document.documentElement.classList.contains("modal-open"));
@@ -816,7 +816,7 @@ const { chromium } = require("playwright");
   // 1. grid + every modal at the five spec widths; no horizontal overflow anywhere
   for (const w of [320, 375, 768, 1024, 1440]) {
     const page = await browser.newPage({ viewport: { width: w, height: 900 } });
-    await page.goto("http://localhost:8000/#projects", { waitUntil: "networkidle" });
+    await page.goto("http://localhost:8123/#projects", { waitUntil: "networkidle" });
     await page.waitForTimeout(800); // let reveals settle
     const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
     assert(noOverflow, "horizontal overflow at " + w + "px");
@@ -837,7 +837,7 @@ const { chromium } = require("playwright");
   // 2. reduced motion: everything still opens and closes
   const rm = await browser.newPage({ viewport: { width: 375, height: 812 } });
   await rm.emulateMedia({ reducedMotion: "reduce" });
-  await rm.goto("http://localhost:8000/", { waitUntil: "networkidle" });
+  await rm.goto("http://localhost:8123/", { waitUntil: "networkidle" });
   await rm.locator('.card[data-modal="modal-tambal"]').click({ position: { x: 20, y: 20 } });
   assert(await rm.evaluate(() => document.getElementById("modal-tambal").open), "reduced-motion: open failed");
   await rm.keyboard.press("Escape");
@@ -846,7 +846,7 @@ const { chromium } = require("playwright");
 
   // 3. background scroll lock: page must not scroll while a modal is open
   const sl = await browser.newPage({ viewport: { width: 375, height: 812 } });
-  await sl.goto("http://localhost:8000/#projects", { waitUntil: "networkidle" });
+  await sl.goto("http://localhost:8123/#projects", { waitUntil: "networkidle" });
   await sl.locator('.card[data-modal="modal-tambal"]').click({ position: { x: 20, y: 20 } });
   const before = await sl.evaluate(() => window.scrollY);
   await sl.mouse.wheel(0, 600);
@@ -859,7 +859,7 @@ const { chromium } = require("playwright");
   //    images and verify the grid renders inside the dialog — proves the CSS
   //    ships working even though no project has pictures yet.
   const g = await browser.newPage({ viewport: { width: 375, height: 812 } });
-  await g.goto("http://localhost:8000/", { waitUntil: "networkidle" });
+  await g.goto("http://localhost:8123/", { waitUntil: "networkidle" });
   await g.evaluate(() => {
     const html =
       '<h4 class="md-h"><span>##</span> Screenshots</h4>' +

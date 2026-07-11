@@ -147,6 +147,20 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(changed)
         self.assertEqual(ledger["days"]["2026-06-20"], {"m": 3, "s": 1, "t": 0})
 
+    def test_upsert_preserves_existing_tok(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-07-10"] = {"m": 5, "s": 1, "t": 0, "tok": 12345}
+        changed = uca.upsert_days(ledger, {"2026-07-10": {"m": 9, "s": 2, "t": 3}})
+        self.assertTrue(changed)
+        self.assertEqual(ledger["days"]["2026-07-10"],
+                         {"m": 9, "s": 2, "t": 3, "tok": 12345})
+
+    def test_upsert_identical_scan_with_tok_reports_no_change(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-07-10"] = {"m": 9, "s": 2, "t": 3, "tok": 12345}
+        self.assertFalse(
+            uca.upsert_days(ledger, {"2026-07-10": {"m": 9, "s": 2, "t": 3}}))
+
     def test_totals_recomputed_from_days(self):
         ledger = uca.new_ledger()
         ledger["days"] = {

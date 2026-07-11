@@ -117,6 +117,9 @@ def upsert_days(ledger, scanned, horizon=None):
     older than it is skipped so a stale partial rescan can't clobber the
     correct value. Pass None (the default) to disable this filtering.
 
+    Scanned counts never include token data, so an existing day's "tok" is
+    carried over into the replacement dict.
+
     Returns True if any day actually changed (idempotent re-runs return False).
     """
     seeded_through = ledger.get("seededThrough") or ""
@@ -126,7 +129,12 @@ def upsert_days(ledger, scanned, horizon=None):
             continue
         if horizon and date < horizon:
             continue
-        if ledger["days"].get(date) != counts:
+        existing = ledger["days"].get(date)
+        # scanned counts never carry token data — carry over an existing
+        # "tok" so a rescan can't strip what merge_tokens wrote
+        if existing and "tok" in existing:
+            counts = dict(counts, tok=existing["tok"])
+        if existing != counts:
             ledger["days"][date] = counts
             changed = True
     return changed

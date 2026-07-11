@@ -388,9 +388,9 @@
 
   function bucket(m, qs) {
     if (!m) return 0;
-    if (m <= qs[0]) return 1;
-    if (m <= qs[1]) return 2;
-    if (m <= qs[2]) return 3;
+    if (m < qs[0]) return 1;
+    if (m < qs[1]) return 2;
+    if (m < qs[2]) return 3;
     return 4;
   }
 

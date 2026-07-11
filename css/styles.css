@@ -812,6 +812,74 @@ p { max-width: 62ch; }
 .footer-inner a { color: var(--text-soft); }
 .footer-inner a:hover { color: var(--coral); }
 
+/* ---- Claude stats: contribution heatmap ------------------- */
+.term--stats { margin-top: 0.5rem; }
+.cs-body { padding: clamp(1.25rem, 3.5vw, 2rem); }
+/* reuse the hero-stats look; just tighten it inside the card */
+.cs-stats { margin-bottom: 1.6rem; padding-bottom: 1.4rem; }
+
+/* the grid has a fixed intrinsic width — this wrapper absorbs the overflow.
+   Known trap in this codebase: any grid/flex ancestor on the path would need
+   min-width: 0; currently the path (.section > .container > .term > .cs-body)
+   is all block-level, so the scroller alone suffices. */
+.cs-scroll { overflow-x: auto; min-width: 0; padding-bottom: 0.4rem; }
+
+.cs-graph {
+  display: grid;
+  grid-template-areas: ". months" "days cells";
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  width: max-content;
+}
+.cs-months {
+  grid-area: months;
+  display: grid;               /* same column pitch as .cs-cells so labels align */
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  gap: 3px;
+  height: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-faint);
+}
+.cs-months span { grid-row: 1; white-space: nowrap; }
+.cs-daylabels {
+  grid-area: days;
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-faint);
+  text-align: right;
+}
+.cs-daylabels span { line-height: 11px; }
+.cs-cells {
+  grid-area: cells;
+  display: grid;
+  grid-auto-flow: column;      /* one column per week, 7 rows (Sun–Sat) */
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-columns: 11px;
+  gap: 3px;
+}
+.cs-cell {
+  width: 11px; height: 11px;
+  border-radius: 2.5px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+}
+.cs-cell.empty { visibility: hidden; }
+.cs-cell.l1 { background: color-mix(in srgb, var(--coral) 25%, var(--bg-3)); border-color: transparent; }
+.cs-cell.l2 { background: color-mix(in srgb, var(--coral) 48%, var(--bg-3)); border-color: transparent; }
+.cs-cell.l3 { background: color-mix(in srgb, var(--coral) 72%, var(--bg-3)); border-color: transparent; }
+.cs-cell.l4 { background: var(--coral); border-color: transparent; }
+.cs-updated {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  margin-top: 1.1rem;
+}
+
 /* ---- Scroll reveal ---------------------------------------- */
 .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
 .reveal.is-visible { opacity: 1; transform: none; }

@@ -39,6 +39,7 @@
       <ul class="nav-links" id="nav-links">
         <li><a class="nav-link" href="#about">about</a></li>
         <li><a class="nav-link" href="#stack">stack</a></li>
+        <li><a class="nav-link" href="#claude-stats">stats</a></li>
         <li><a class="nav-link" href="#experience">experience</a></li>
         <li><a class="nav-link" href="#projects">projects</a></li>
         <li><a class="nav-link" href="#contact">contact</a></li>
@@ -247,6 +248,40 @@
               <span class="tag"><img class="ti" src="assets/icons/n8n.svg" alt="" />n8n</span>
               <span class="tag">Make</span><span class="tag">Power Automate</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Claude stats ===== -->
+    <section class="section" id="claude-stats">
+      <div class="container">
+        <p class="eyebrow"><b>✻</b> claude stats</p>
+        <h2 class="reveal" style="margin-bottom:0.75rem">Proof of AI-native</h2>
+        <p class="lead reveal" style="margin-bottom:1.25rem">My actual Claude Code usage, updated daily from my machine.</p>
+        <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> claude stats --graph <span class="c"># messages per day</span></p>
+
+        <div class="term term--stats reveal">
+          <div class="term-bar">
+            <span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span>
+            <span class="t-title">claude — usage heatmap</span>
+            <span class="t-state"><span class="dotpulse"></span>daily</span>
+          </div>
+          <div class="cs-body">
+            <div class="hero-stats cs-stats">
+              <div class="stat"><div class="n" id="cs-sessions">—</div><div class="l">sessions</div></div>
+              <div class="stat"><div class="n" id="cs-messages">—</div><div class="l">messages</div></div>
+              <div class="stat"><div class="n" id="cs-active">—</div><div class="l">active days</div></div>
+              <div class="stat"><div class="n" id="cs-streak">—</div><div class="l">longest streak</div></div>
+            </div>
+            <div class="cs-scroll">
+              <div class="cs-graph">
+                <div class="cs-months" id="cs-months"></div>
+                <div class="cs-daylabels" aria-hidden="true"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+                <div class="cs-cells" id="cs-cells"></div>
+              </div>
+            </div>
+            <p class="cs-updated" id="cs-updated"></p>
           </div>
         </div>
       </div>

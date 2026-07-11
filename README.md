@@ -16,6 +16,12 @@ yort-portfolio/
 │   └── styles.css    The whole theme (CSS variables at the top control everything)
 ├── js/
 │   └── main.js       Nav toggle · scrollspy · scroll-reveal · the typing terminal
+├── data/
+│   └── claude-activity.json   Day-level Claude Code usage counts (auto-updated daily)
+├── scripts/
+│   ├── update-claude-activity.py          Rebuilds data/claude-activity.json from local logs
+│   ├── test_update_claude_activity.py     Its unit tests (python3 scripts/test_update_claude_activity.py)
+│   └── install-claude-activity-timer.sh   One-time systemd user-timer setup (run after merge)
 └── assets/
     ├── resume.pdf    Linked by the "Résumé" buttons
     ├── icons/        Brand SVGs for the stack/toolbelt (Devicon + Simple Icons)
@@ -74,6 +80,14 @@ reveal lives in `js/main.js` (`bootIntro()` toggles the `.booting` class on
 The **Experience** section reuses the same `.term` window component as a
 terminal session, and `.prompt-echo` lines (`❯ …`) thread the terminal theme
 through About, Stack, and Projects.
+
+## Claude activity data
+
+The `#claude-stats` section renders `data/claude-activity.json` — a ledger of
+my Claude Code usage maintained by `scripts/update-claude-activity.py` on a
+daily systemd user timer. **Privacy:** only day-level aggregate counts
+(messages, sessions, tool calls per day) are ever published. No prompts, no
+conversation content, no project names, and no credentials leave my machine.
 
 ## Deploy
 

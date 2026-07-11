@@ -107,5 +107,55 @@ class ScanProjectsTest(unittest.TestCase):
         self.assertEqual(uca.scan_projects(self.projects)["2026-07-11"]["m"], 1)
 
 
+class LedgerTest(unittest.TestCase):
+    def test_upsert_replaces_scanned_days(self):
+        ledger = uca.new_ledger()
+        ledger["days"]["2026-07-10"] = {"m": 5, "s": 1, "t": 0}
+        changed = uca.upsert_days(ledger, {"2026-07-10": {"m": 9, "s": 2, "t": 3}})
+        self.assertTrue(changed)
+        self.assertEqual(ledger["days"]["2026-07-10"], {"m": 9, "s": 2, "t": 3})
+
+    def test_upsert_identical_scan_reports_no_change(self):
+        ledger = uca.new_ledger()
+        scanned = {"2026-07-10": {"m": 9, "s": 2, "t": 3}}
+        uca.upsert_days(ledger, scanned)
+        self.assertFalse(uca.upsert_days(ledger, dict(scanned)))
+
+    def test_upsert_never_touches_seeded_dates(self):
+        ledger = uca.new_ledger()
+        ledger["seededThrough"] = "2026-06-10"
+        ledger["days"]["2026-06-10"] = {"m": 100, "s": 4, "t": 9}
+        changed = uca.upsert_days(ledger, {"2026-06-10": {"m": 1, "s": 1, "t": 1}})
+        self.assertFalse(changed)
+        self.assertEqual(ledger["days"]["2026-06-10"], {"m": 100, "s": 4, "t": 9})
+
+    def test_totals_recomputed_from_days(self):
+        ledger = uca.new_ledger()
+        ledger["days"] = {
+            "2026-07-10": {"m": 5, "s": 1, "t": 2},
+            "2026-07-11": {"m": 7, "s": 2, "t": 4},
+        }
+        uca.recompute_totals(ledger)
+        self.assertEqual(ledger["totals"], {
+            "sessions": 3, "messages": 12, "toolCalls": 6, "activeDays": 2})
+        self.assertEqual(ledger["firstDate"], "2026-07-10")
+
+    def test_write_ledger_roundtrip_preserves_unknown_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "data" / "claude-activity.json"
+            ledger = uca.new_ledger()
+            ledger["futureField"] = {"keep": "me"}  # forward-compat contract
+            ledger["days"]["2026-07-11"] = {"m": 1, "s": 1, "t": 0}
+            uca.write_ledger(path, ledger)
+            loaded = uca.load_ledger(path)
+            self.assertEqual(loaded["futureField"], {"keep": "me"})
+            self.assertEqual(loaded["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
+            self.assertFalse(path.with_suffix(".json.tmp").exists())
+
+    def test_load_ledger_missing_file_returns_new_ledger(self):
+        self.assertEqual(uca.load_ledger(Path("/nonexistent/x.json")),
+                         uca.new_ledger())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -84,3 +84,61 @@ def scan_projects(projects_dir):
             days[date]["t"] += counts["t"]
             days[date]["s"] += 1
     return dict(days)
+
+
+# ---- ledger -----------------------------------------------------------------
+
+def new_ledger():
+    return {
+        "version": 1,
+        "generatedAt": None,
+        "timezone": "Asia/Manila",
+        "firstDate": None,
+        "seededThrough": None,
+        "totals": {},
+        "days": {},
+    }
+
+
+def load_ledger(path):
+    if not path.exists():
+        return new_ledger()
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def upsert_days(ledger, scanned):
+    """Replace ledger days with scanned values. Never touch dates <= seededThrough.
+
+    Returns True if any day actually changed (idempotent re-runs return False).
+    """
+    seeded_through = ledger.get("seededThrough") or ""
+    changed = False
+    for date, counts in scanned.items():
+        if date <= seeded_through:
+            continue
+        if ledger["days"].get(date) != counts:
+            ledger["days"][date] = counts
+            changed = True
+    return changed
+
+
+def recompute_totals(ledger):
+    days = ledger["days"]
+    ledger["totals"] = {
+        "sessions": sum(d["s"] for d in days.values()),
+        "messages": sum(d["m"] for d in days.values()),
+        "toolCalls": sum(d["t"] for d in days.values()),
+        "activeDays": len(days),
+    }
+    ledger["firstDate"] = min(days) if days else None
+
+
+def write_ledger(path, ledger):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ledger["days"] = dict(sorted(ledger["days"].items()))
+    tmp = path.with_suffix(".json.tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(ledger, fh, indent=2)
+        fh.write("\n")
+    os.replace(tmp, path)

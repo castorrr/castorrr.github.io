@@ -73,6 +73,26 @@
   var yearEl = document.querySelector("[data-year]");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* ---- Project modals -------------------------------------- */
+  document.querySelectorAll(".card[data-modal]").forEach(function (card) {
+    var dlg = document.getElementById(card.getAttribute("data-modal"));
+    if (!dlg || typeof dlg.showModal !== "function") return; // no dialog support → cards stay static
+    card.addEventListener("click", function (e) {
+      if (e.target.closest("a")) return; // let real links act normally
+      if (!dlg.open) {
+        dlg.showModal();
+        document.documentElement.classList.add("modal-open");
+      }
+    });
+    dlg.addEventListener("click", function (e) {
+      // backdrop click (target is the dialog itself) or the red traffic-light dot
+      if (e.target === dlg || e.target.closest("[data-close]")) dlg.close();
+    });
+    dlg.addEventListener("close", function () {
+      document.documentElement.classList.remove("modal-open");
+    });
+  });
+
   /* ========================================================
      Battle vs. Claude — the meter is the CONTEXT WINDOW.
      Each exchange burns tokens; when a side's context fills

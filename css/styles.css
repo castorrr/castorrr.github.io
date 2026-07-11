@@ -755,22 +755,131 @@ p { max-width: 62ch; }
   border-color: color-mix(in srgb, var(--coral) 40%, transparent);
   box-shadow: 0 28px 60px -34px rgba(0,0,0,0.9);
 }
-.card .role {
+.card .role, .pmodal .role {
   font-family: var(--font-mono);
   font-size: 0.74rem; color: var(--coral);
   text-transform: uppercase; letter-spacing: 0.05em;
 }
-.card h3 { font-family: var(--font-body); font-weight: 700; font-size: 1.3rem; margin: 0.5rem 0 0.15rem; }
-.card .kind { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-faint); }
+.card h3, .pmodal h3 { font-family: var(--font-body); font-weight: 700; font-size: 1.3rem; margin: 0.5rem 0 0.15rem; }
+.card .kind, .pmodal .kind { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-faint); }
 .card p { color: var(--text-soft); font-size: 0.95rem; margin-top: 0.9rem; flex: 1; }
-.card .ctags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.25rem; }
-.card .ctags span {
+.card .ctags, .pmodal .ctags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.25rem; }
+.card .ctags span, .pmodal .ctags span {
   font-family: var(--font-mono); font-size: 0.72rem;
   color: var(--text-soft);
   padding: 0.2rem 0.55rem;
   border: 1px solid var(--line-2);
   border-radius: 6px;
 }
+
+/* clickable cards: status badge row + prompt-line open affordance */
+.card[data-modal] { cursor: pointer; }
+.card-top {
+  display: flex; align-items: baseline;
+  justify-content: space-between; gap: 0.75rem;
+}
+.status {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  flex: none;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.status--live { color: var(--green); }
+.status--thesis { color: var(--coral); }
+.status .dotpulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2.2s infinite;
+}
+.card-open {
+  background: none; border: 0;
+  padding: 1.1rem 0 0;
+  text-align: left; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--text-faint);
+  transition: color var(--dur) var(--ease);
+}
+.card-open .ps { color: var(--coral); margin-right: 0.55rem; }
+.card:hover .card-open,
+.card-open:focus-visible { color: var(--coral); }
+
+/* ---- Project modals ---------------------------------------- */
+/* Each project's detail view is a native <dialog> dressed as another
+   terminal window (.term chrome). showModal() gives Esc, focus trap,
+   and ::backdrop for free — see the "Project modals" block in main.js. */
+dialog.pmodal {
+  /* .term sets position:relative for its non-dialog uses (battle log, stats,
+     xp cards); restated here with higher specificity so the dialog keeps the
+     UA's viewport-fixed centering instead of centering against the whole
+     scrolled document, which used to defeat the scroll lock below. */
+  position: fixed;
+  width: min(100% - 1.5rem, 44rem);
+  max-height: min(88dvh, 100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  color: var(--text); /* dialog UA default is CanvasText (black) */
+}
+dialog.pmodal[open] {
+  display: flex; flex-direction: column;
+  opacity: 1; transform: scale(1);
+  transition: opacity 0.22s var(--ease), transform 0.22s var(--ease);
+}
+@starting-style {
+  dialog.pmodal[open] { opacity: 0; transform: scale(0.97); }
+}
+dialog.pmodal::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+}
+html.modal-open { overflow: hidden; } /* page scroll lock while a dialog is open */
+
+.pmodal .term-bar { flex: none; }
+.pmodal .term-bar button.dot { border: 0; padding: 0; cursor: pointer; } /* strip <button> UA chrome off the red dot */
+.pmodal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(1.25rem, 4.5vw, 2.25rem);
+}
+.pmodal-body .prompt-echo { margin-bottom: 1.5rem; }
+.pmodal-body > p { color: var(--text-soft); font-size: 0.95rem; }
+
+/* section headers, rendered like Markdown in a terminal pager */
+.md-h {
+  margin: 1.9rem 0 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text);
+}
+.md-h span { color: var(--coral); margin-right: 0.5rem; }
+
+/* highlights — same ▸ treatment as .entry li */
+.hl { display: grid; gap: 0.5rem; }
+.hl li {
+  position: relative; padding-left: 1.25rem;
+  color: var(--text-soft); font-size: 0.95rem;
+}
+.hl li::before { content: "▸"; position: absolute; left: 0; color: var(--coral); }
+
+/* screenshot gallery — markup stays commented out until images exist */
+.shots {
+  display: grid;
+  /* min(100%,…) keeps the track floor from exceeding tiny viewports */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+}
+.shots img {
+  width: 100%; height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.shots figcaption {
+  font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--text-faint);
+  margin-top: 0.4rem;
+}
+
+.plinks { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
 
 /* ---- Contact ---------------------------------------------- */
 .contact { text-align: center; }

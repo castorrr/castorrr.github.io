@@ -340,10 +340,13 @@
       <div class="container">
         <p class="eyebrow"><b>✻</b> selected projects</p>
         <h2 class="reveal" style="margin-bottom:1.25rem">Things I've built</h2>
-        <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> ls -la ~/projects <span class="c"># a couple of favorites</span></p>
+        <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> ls -la ~/projects <span class="c"># a few favorites</span></p>
         <div class="project-grid">
-          <article class="card reveal">
-            <span class="role">Lead Software &amp; Firmware Developer</span>
+          <article class="card reveal" data-modal="modal-tambal">
+            <div class="card-top">
+              <span class="role">Lead Software &amp; Firmware Developer</span>
+              <span class="status status--thesis">thesis</span>
+            </div>
             <h3>TAMBAL-PD</h3>
             <span class="kind">IoT · Smart Medicine Management</span>
             <p>
@@ -352,9 +355,15 @@
               elderly-care facility, improving medication adherence for 30 residents.
             </p>
             <div class="ctags"><span>Flutter</span><span>Firebase</span><span>ESP32</span><span>Arduino C++</span></div>
+            <button class="card-open" aria-haspopup="dialog" aria-controls="modal-tambal">
+              <span class="ps">❯</span> cat tambal-pd.md
+            </button>
           </article>
-          <article class="card reveal">
-            <span class="role">Lead Backend Developer</span>
+          <article class="card reveal" data-modal="modal-school">
+            <div class="card-top">
+              <span class="role">Lead Backend Developer</span>
+              <span class="status status--live"><i class="dotpulse"></i>live</span>
+            </div>
             <h3>Sisters of Mary — School Admin</h3>
             <span class="kind">Web · 5,000+ students / campus</span>
             <p>
@@ -363,8 +372,191 @@
               deployed for reliable multi-campus access.
             </p>
             <div class="ctags"><span>Spring Boot</span><span>PostgreSQL</span><span>REST</span><span>RBAC</span></div>
+            <button class="card-open" aria-haspopup="dialog" aria-controls="modal-school">
+              <span class="ps">❯</span> cat school-admin.md
+            </button>
+          </article>
+          <article class="card reveal" data-modal="modal-doxie">
+            <div class="card-top">
+              <span class="role">Creator</span>
+              <span class="status status--live"><i class="dotpulse"></i>live</span>
+            </div>
+            <h3>Doxie</h3>
+            <span class="kind">CLI · AI-Native Documentation</span>
+            <p>
+              Ship code and docs in one go — a TypeScript CLI that scaffolds an AI-driven
+              documentation workflow into any repo. One <span class="mono">doxie init</span>
+              installs Claude Code slash commands, doc templates, and runtime scripts, so
+              docs are generated and kept current alongside the code.
+            </p>
+            <div class="ctags"><span>TypeScript</span><span>Node.js</span><span>Claude Code</span><span>CLI</span></div>
+            <button class="card-open" aria-haspopup="dialog" aria-controls="modal-doxie">
+              <span class="ps">❯</span> cat doxie.md
+            </button>
           </article>
         </div>
+
+        <!-- Project detail modals — one terminal window per project.
+             Screenshots: each dialog carries a commented .shots block;
+             drop images into assets/images/projects/ and uncomment. -->
+        <dialog class="term pmodal" id="modal-tambal" aria-labelledby="modal-tambal-title">
+          <div class="term-bar">
+            <div class="dots">
+              <button class="dot r" data-close aria-label="Close project details"></button>
+              <span class="dot y"></span><span class="dot g"></span>
+            </div>
+            <span class="t-title">~/projects/tambal-pd.md</span>
+            <span class="t-state">[esc] close</span>
+          </div>
+          <div class="pmodal-body">
+            <p class="prompt-echo"><span class="ps">❯</span> cat tambal-pd.md</p>
+            <header class="pmodal-head">
+              <div class="card-top">
+                <span class="role">Lead Software &amp; Firmware Developer</span>
+                <span class="status status--thesis">thesis</span>
+              </div>
+              <h3 id="modal-tambal-title">TAMBAL-PD</h3>
+              <span class="kind">IoT · Smart Medicine Management</span>
+            </header>
+
+            <h4 class="md-h"><span>##</span> Overview</h4>
+            <p>
+              TAMBAL-PD pairs a cross-platform Flutter app with a custom ESP32-based smart
+              medicine dispenser. Caregivers schedule medications in the app; the dispenser
+              authenticates residents with biometrics and dispenses the right dose at the
+              right time, with everything synced through Firebase.
+            </p>
+
+            <h4 class="md-h"><span>##</span> Highlights</h4>
+            <ul class="hl">
+              <li>Custom ESP32 firmware (Arduino C++) driving the dispensing hardware and the biometric module</li>
+              <li>Real-time sync between device, app, and cloud via Firebase</li>
+              <li>Deployed in an elderly-care facility — improved medication adherence for 30 residents</li>
+              <li>Led both the software and firmware sides of the build</li>
+              <li>Computer Engineering thesis project (CIT-U)</li>
+            </ul>
+
+            <!-- Screenshots: uncomment when images land in assets/images/projects/
+            <h4 class="md-h"><span>##</span> Screenshots</h4>
+            <div class="shots">
+              <figure>
+                <img src="assets/images/projects/tambal-1.webp" alt="" loading="lazy" width="1280" height="720">
+                <figcaption></figcaption>
+              </figure>
+            </div>
+            -->
+
+            <div class="ctags"><span>Flutter</span><span>Firebase</span><span>ESP32</span><span>Arduino C++</span></div>
+            <div class="plinks">
+              <a class="social-link" href="https://github.com/castorrr/tambal" target="_blank" rel="noopener">GitHub ↗</a>
+            </div>
+          </div>
+        </dialog>
+
+        <dialog class="term pmodal" id="modal-school" aria-labelledby="modal-school-title">
+          <div class="term-bar">
+            <div class="dots">
+              <button class="dot r" data-close aria-label="Close project details"></button>
+              <span class="dot y"></span><span class="dot g"></span>
+            </div>
+            <span class="t-title">~/projects/school-admin.md</span>
+            <span class="t-state">[esc] close</span>
+          </div>
+          <div class="pmodal-body">
+            <p class="prompt-echo"><span class="ps">❯</span> cat school-admin.md</p>
+            <header class="pmodal-head">
+              <div class="card-top">
+                <span class="role">Lead Backend Developer</span>
+                <span class="status status--live"><i class="dotpulse"></i>live</span>
+              </div>
+              <h3 id="modal-school-title">Sisters of Mary — School Admin</h3>
+              <span class="kind">Web · 5,000+ students / campus</span>
+            </header>
+
+            <h4 class="md-h"><span>##</span> Overview</h4>
+            <p>
+              An operations and records platform for the Sisters of Mary schools, serving
+              5,000+ students per campus. Built on Spring Boot with REST APIs over
+              PostgreSQL: enrollment workflows, student records, and role-based access
+              control, deployed for reliable multi-campus use.
+            </p>
+
+            <h4 class="md-h"><span>##</span> Highlights</h4>
+            <ul class="hl">
+              <li>Designed and built the backend — REST APIs on Spring Boot over PostgreSQL</li>
+              <li>Enrollment workflows and student records at 5,000+ students per campus</li>
+              <li>Role-based access control for staff across campuses</li>
+            </ul>
+
+            <!-- Screenshots: uncomment when images land in assets/images/projects/
+            <h4 class="md-h"><span>##</span> Screenshots</h4>
+            <div class="shots">
+              <figure>
+                <img src="assets/images/projects/school-admin-1.webp" alt="" loading="lazy" width="1280" height="720">
+                <figcaption></figcaption>
+              </figure>
+            </div>
+            -->
+
+            <div class="ctags"><span>Spring Boot</span><span>PostgreSQL</span><span>REST</span><span>RBAC</span></div>
+            <div class="plinks">
+              <a class="social-link" href="https://smsgirlstown.online/" target="_blank" rel="noopener">Live site ↗</a>
+            </div>
+          </div>
+        </dialog>
+
+        <dialog class="term pmodal" id="modal-doxie" aria-labelledby="modal-doxie-title">
+          <div class="term-bar">
+            <div class="dots">
+              <button class="dot r" data-close aria-label="Close project details"></button>
+              <span class="dot y"></span><span class="dot g"></span>
+            </div>
+            <span class="t-title">~/projects/doxie.md</span>
+            <span class="t-state">[esc] close</span>
+          </div>
+          <div class="pmodal-body">
+            <p class="prompt-echo"><span class="ps">❯</span> cat doxie.md</p>
+            <header class="pmodal-head">
+              <div class="card-top">
+                <span class="role">Creator</span>
+                <span class="status status--live"><i class="dotpulse"></i>live</span>
+              </div>
+              <h3 id="modal-doxie-title">Doxie</h3>
+              <span class="kind">CLI · AI-Native Documentation</span>
+            </header>
+
+            <h4 class="md-h"><span>##</span> Overview</h4>
+            <p>
+              Ship code and docs in one go. Doxie is a TypeScript CLI that scaffolds an
+              AI-driven documentation workflow into any repo — so docs are generated by AI
+              right where the code changes, instead of rotting in a wiki.
+            </p>
+
+            <h4 class="md-h"><span>##</span> Highlights</h4>
+            <ul class="hl">
+              <li><span class="mono">doxie init</span> scaffolds <span class="mono">doxie-docs/</span>, <span class="mono">.doxie/scripts/</span>, and <span class="mono">.claude/commands/doxie/</span> into a target repo — safe to re-run, <span class="mono">--force</span> to refresh templates</li>
+              <li>Template-driven: drop a Markdown prompt or TypeScript script under <span class="mono">templates/</span> and it ships — no code changes needed</li>
+              <li>Slash commands run inside Claude Code; scripts run via <span class="mono">tsx</span>, no build step</li>
+              <li>Live landing page and public repo</li>
+            </ul>
+
+            <!-- Screenshots: uncomment when images land in assets/images/projects/
+            <h4 class="md-h"><span>##</span> Screenshots</h4>
+            <div class="shots">
+              <figure>
+                <img src="assets/images/projects/doxie-1.webp" alt="" loading="lazy" width="1280" height="720">
+                <figcaption></figcaption>
+              </figure>
+            </div>
+            -->
+
+            <div class="ctags"><span>TypeScript</span><span>Node.js</span><span>Claude Code</span><span>CLI</span></div>
+            <div class="plinks">
+              <a class="social-link" href="https://castorrr.github.io/doxie/" target="_blank" rel="noopener">Site ↗</a>
+              <a class="social-link" href="https://github.com/castorrr/doxie" target="_blank" rel="noopener">GitHub ↗</a>
+            </div>
+          </div>
+        </dialog>
       </div>
     </section>
 

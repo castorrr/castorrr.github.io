@@ -279,10 +279,16 @@ class CliTest(unittest.TestCase):
         self.repo = root / "repo"
         self.repo.mkdir()
         self.ledger_path = self.repo / "data" / "claude-activity.json"
+        self.cache = root / "stats-cache.json"
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"date": "2026-07-11",
+             "tokensByModel": {"claude-opus-4-8": 1500, "claude-sonnet-5": 500}},
+        ]}))
 
     def run_cli(self, *extra):
         return uca.main(["--no-git", "--repo", str(self.repo),
-                         "--projects-dir", str(self.projects), *extra])
+                         "--projects-dir", str(self.projects),
+                         "--stats-cache", str(self.cache), *extra])
 
     def test_dry_run_writes_nothing(self):
         rc = uca.main(["--dry-run", "--repo", str(self.repo),
@@ -293,10 +299,11 @@ class CliTest(unittest.TestCase):
     def test_normal_run_writes_ledger(self):
         self.assertEqual(self.run_cli(), 0)
         ledger = json.loads(self.ledger_path.read_text())
-        self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
+        self.assertEqual(ledger["days"]["2026-07-11"],
+                         {"m": 1, "s": 1, "t": 0, "tok": 2000})
         self.assertEqual(ledger["totals"], {
             "sessions": 1, "messages": 1, "toolCalls": 0, "activeDays": 1,
-            "tokens": 0})
+            "tokens": 2000})
         self.assertEqual(ledger["timezone"], "Asia/Manila")
         self.assertTrue(ledger["generatedAt"].startswith("2026-"))
 
@@ -314,6 +321,32 @@ class CliTest(unittest.TestCase):
             uca.main(["--no-git", "--repo", str(self.repo),
                       "--projects-dir", str(empty)])
         self.assertFalse(self.ledger_path.exists())
+
+    def test_missing_stats_cache_run_proceeds_without_tokens(self):
+        self.cache.unlink()
+        self.assertEqual(self.run_cli(), 0)
+        ledger = json.loads(self.ledger_path.read_text())
+        self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
+        self.assertEqual(ledger["totals"]["tokens"], 0)
+
+    def test_missing_stats_cache_preserves_existing_tok(self):
+        self.run_cli()                       # writes tok: 2000
+        self.cache.unlink()
+        self.run_cli()                       # token data must survive
+        ledger = json.loads(self.ledger_path.read_text())
+        self.assertEqual(ledger["days"]["2026-07-11"]["tok"], 2000)
+        self.assertEqual(ledger["totals"]["tokens"], 2000)
+
+    def test_token_only_change_rewrites_ledger(self):
+        self.run_cli()
+        first = self.ledger_path.read_text()
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"date": "2026-07-11", "tokensByModel": {"claude-opus-4-8": 9999}}]}))
+        self.assertEqual(self.run_cli(), 0)
+        self.assertNotEqual(self.ledger_path.read_text(), first)
+        ledger = json.loads(self.ledger_path.read_text())
+        self.assertEqual(ledger["days"]["2026-07-11"]["tok"], 9999)
+        self.assertEqual(ledger["totals"]["tokens"], 9999)
 
 
 class SeedTest(unittest.TestCase):
@@ -335,6 +368,9 @@ class SeedTest(unittest.TestCase):
                 {"date": "2026-07-10", "messageCount": 500, "sessionCount": 9, "toolCallCount": 60},
                 {"date": "2026-07-11", "messageCount": 9999, "sessionCount": 99, "toolCallCount": 999},
             ],
+            "dailyModelTokens": [
+                {"date": "2026-03-03", "tokensByModel": {"claude-sonnet-4-6": 26394}},
+            ],
         }))
 
     def run_seed(self):
@@ -347,7 +383,8 @@ class SeedTest(unittest.TestCase):
         ledger = json.loads((self.repo / "data/claude-activity.json").read_text())
         # boundary = oldest transcript day (2026-07-11) minus one = 2026-07-10
         self.assertEqual(ledger["seededThrough"], "2026-07-10")
-        self.assertEqual(ledger["days"]["2026-03-03"], {"m": 99, "s": 4, "t": 17})
+        self.assertEqual(ledger["days"]["2026-03-03"],
+                         {"m": 99, "s": 4, "t": 17, "tok": 26394})
         self.assertEqual(ledger["days"]["2026-07-10"], {"m": 500, "s": 9, "t": 60})
         # 2026-07-11 must come from the transcript scan, not the cache entry
         self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
@@ -358,6 +395,12 @@ class SeedTest(unittest.TestCase):
         self.run_seed()
         with self.assertRaises(SystemExit):
             self.run_seed()
+
+    def test_seed_run_backfills_tokens_for_seeded_days(self):
+        self.run_seed()
+        ledger = json.loads((self.repo / "data/claude-activity.json").read_text())
+        self.assertEqual(ledger["days"]["2026-03-03"]["tok"], 26394)
+        self.assertEqual(ledger["totals"]["tokens"], 26394)
 
 
 class GitSyncTest(unittest.TestCase):
@@ -392,13 +435,18 @@ class GitSyncTest(unittest.TestCase):
         proj.mkdir(parents=True)
         (proj / "s1.jsonl").write_text(msg() + "\n")
 
+        self.cache = root / "stats-cache.json"
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"date": "2026-07-11", "tokensByModel": {"claude-opus-4-8": 500}}]}))
+
     def _git(self, cwd, *args):
         return subprocess.run(["git", "-C", str(cwd), *args], check=True,
                               capture_output=True, text=True).stdout.strip()
 
     def run_cli(self):
         return uca.main(["--repo", str(self.clone),
-                         "--projects-dir", str(self.projects)])
+                         "--projects-dir", str(self.projects),
+                         "--stats-cache", str(self.cache)])
 
     def test_run_commits_and_pushes_when_changed(self):
         self.assertEqual(self.run_cli(), 0)
@@ -427,6 +475,15 @@ class GitSyncTest(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 uca.run_git(self.clone, "rev-parse", "--verify", "no-such-ref-xyz")
         self.assertIn("fatal", captured.getvalue())
+
+    def test_token_only_change_commits_and_pushes(self):
+        self.run_cli()
+        self.cache.write_text(json.dumps({"dailyModelTokens": [
+            {"date": "2026-07-11", "tokensByModel": {"claude-opus-4-8": 777}}]}))
+        self.run_cli()
+        # init + first update + token-only update
+        self.assertEqual(self._git(self.origin, "rev-list", "--count", "main"),
+                         "3")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 """Maintain data/claude-activity.json — a day-level ledger of Claude Code usage.
 
 Privacy: this script reads ONLY local Claude Code usage metadata (message /
-session / tool-call counts per day) from ~/.claude. No prompts, no conversation
+session / tool-call / token counts per day) from ~/.claude. No prompts, no conversation
 content, no project names, and no credentials are read, stored, or published.
 The output is aggregate day-level counts only.
 
@@ -302,7 +302,10 @@ def main(argv=None):
 
     horizon = (datetime.fromisoformat(max(scanned)) - timedelta(days=25)).date().isoformat()
     changed = upsert_days(ledger, scanned, horizon)
-    if not changed and not args.seed:
+    # after upsert/seed so newly created days get tokens in the same run;
+    # exempt from seededThrough/horizon — see merge_tokens docstring
+    tokens_changed = merge_tokens(ledger, load_daily_tokens(args.stats_cache))
+    if not changed and not tokens_changed and not args.seed:
         print("no change; ledger untouched")
         if use_git:
             sync_git(args.repo, max(scanned))  # still push a stranded commit

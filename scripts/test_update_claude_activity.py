@@ -212,6 +212,10 @@ class TokenLoadTest(unittest.TestCase):
         self.cache.write_text("{not json")
         self.assertEqual(uca.load_daily_tokens(self.cache), {})
 
+    def test_non_dict_top_level_returns_empty(self):
+        self.cache.write_text("[]")
+        self.assertEqual(uca.load_daily_tokens(self.cache), {})
+
     def test_malformed_entries_and_zero_days_skipped(self):
         self.cache.write_text(json.dumps({"dailyModelTokens": [
             {"tokensByModel": {"claude-opus-4-8": 5}},              # no date

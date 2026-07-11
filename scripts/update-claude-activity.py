@@ -152,6 +152,8 @@ def load_daily_tokens(path):
             cache = json.load(fh)
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         return {}
+    if not isinstance(cache, dict):
+        return {}
     tokens = {}
     for entry in cache.get("dailyModelTokens", []):
         if not isinstance(entry, dict):

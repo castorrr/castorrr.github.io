@@ -39,7 +39,7 @@ Copied from the spec + project memory — every task implicitly includes these:
 - `.entry li` `▸` bullets pattern: `css/styles.css:732-736` — mirrored by `.hl li`.
 - `.prompt-echo` (unscoped, works inside dialogs as-is): `css/styles.css:684-691`.
 - Global `:focus-visible` coral outline: `css/styles.css:72-76` — covers the new buttons for free.
-- Global reduced-motion kill-switch: `css/styles.css:891-899`.
+- Global reduced-motion kill-switch: `css/styles.css:958-966`.
 - `.mono` utility class exists: `css/styles.css:173`.
 
 ## ID / class contract (used across tasks)
@@ -58,7 +58,7 @@ Copied from the spec + project memory — every task implicitly includes these:
 ### Task 1: Cards — Doxie card, status badges, open affordances (HTML + CSS)
 
 **Files:**
-- Modify: `index.html:308-332` (Projects section: prompt-echo comment + the two existing cards + new third card)
+- Modify: `index.html:343-367` (Projects section: prompt-echo comment + the two existing cards + new third card)
 - Modify: `css/styles.css` — append to the `/* ---- Projects */` block (after line 773, before `/* ---- Contact */` at line 775)
 
 **Interfaces:**
@@ -145,13 +145,13 @@ Expected: `FAIL: expected 3 project cards, got 2`
 
 - [ ] **Step 4: Edit the Projects section in `index.html`**
 
-At `index.html:308`, change the prompt-echo comment (`a couple` → `a few`):
+At `index.html:343`, change the prompt-echo comment (`a couple` → `a few`):
 
 ```html
         <p class="prompt-echo reveal" style="margin-bottom:2.5rem"><span class="ps">❯</span> ls -la ~/projects <span class="c"># a few favorites</span></p>
 ```
 
-Replace the entire `.project-grid` div (`index.html:309-332`) with (keeps the existing summary copy verbatim; adds `data-modal`, `.card-top` rows, badges, `.card-open` buttons, and the Doxie card):
+Replace the entire `.project-grid` div (`index.html:344-367`) with (keeps the existing summary copy verbatim; adds `data-modal`, `.card-top` rows, badges, `.card-open` buttons, and the Doxie card):
 
 ```html
         <div class="project-grid">
@@ -632,7 +632,7 @@ html.modal-open { overflow: hidden; } /* page scroll lock while a dialog is open
 .plinks { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
 ```
 
-Do **not** add reduced-motion rules: the global block at `css/styles.css:891-899` already forces `transition-duration: 0.001ms` on everything, which disables the open animation, and neutralizes the badge pulse.
+Do **not** add reduced-motion rules: the global block at `css/styles.css:958-966` already forces `transition-duration: 0.001ms` on everything, which disables the open animation, and neutralizes the badge pulse.
 
 - [ ] **Step 6: Create the images directory**
 

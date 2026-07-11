@@ -157,5 +157,53 @@ class LedgerTest(unittest.TestCase):
                          uca.new_ledger())
 
 
+class CliTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+        self.projects = root / "projects"
+        proj = self.projects / "proj-a"
+        proj.mkdir(parents=True)
+        (proj / "s1.jsonl").write_text(msg() + "\n")
+        self.repo = root / "repo"
+        self.repo.mkdir()
+        self.ledger_path = self.repo / "data" / "claude-activity.json"
+
+    def run_cli(self, *extra):
+        return uca.main(["--no-git", "--repo", str(self.repo),
+                         "--projects-dir", str(self.projects), *extra])
+
+    def test_dry_run_writes_nothing(self):
+        rc = uca.main(["--dry-run", "--repo", str(self.repo),
+                       "--projects-dir", str(self.projects)])
+        self.assertEqual(rc, 0)
+        self.assertFalse(self.ledger_path.exists())
+
+    def test_normal_run_writes_ledger(self):
+        self.assertEqual(self.run_cli(), 0)
+        ledger = json.loads(self.ledger_path.read_text())
+        self.assertEqual(ledger["days"]["2026-07-11"], {"m": 1, "s": 1, "t": 0})
+        self.assertEqual(ledger["totals"], {
+            "sessions": 1, "messages": 1, "toolCalls": 0, "activeDays": 1})
+        self.assertEqual(ledger["timezone"], "Asia/Manila")
+        self.assertTrue(ledger["generatedAt"].startswith("2026-"))
+
+    def test_second_run_is_a_byte_identical_noop(self):
+        self.run_cli()
+        first = self.ledger_path.read_text()
+        self.run_cli()
+        # generatedAt is only restamped when day data changes
+        self.assertEqual(self.ledger_path.read_text(), first)
+
+    def test_empty_projects_dir_exits_nonzero_without_writing(self):
+        empty = Path(self.tmp.name) / "empty"
+        empty.mkdir()
+        with self.assertRaises(SystemExit):
+            uca.main(["--no-git", "--repo", str(self.repo),
+                      "--projects-dir", str(empty)])
+        self.assertFalse(self.ledger_path.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

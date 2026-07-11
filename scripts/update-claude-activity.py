@@ -142,3 +142,77 @@ def write_ledger(path, ledger):
         json.dump(ledger, fh, indent=2)
         fh.write("\n")
     os.replace(tmp, path)
+
+
+# ---- entry point ------------------------------------------------------------
+
+def seed_ledger(ledger, cache, seeded_through):  # implemented in Task 4
+    raise SystemExit("--seed not implemented yet")
+
+
+def run_git(repo, *args):  # implemented in Task 5
+    raise SystemExit("git integration not implemented yet")
+
+
+def sync_git(repo, max_date):  # implemented in Task 5
+    raise SystemExit("git integration not implemented yet")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--seed", action="store_true",
+                        help="one-time import of history from stats-cache.json")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print would-be day counts; write and commit nothing")
+    parser.add_argument("--repo", type=Path, default=DEFAULT_REPO,
+                        help="portfolio clone whose ledger is written/committed")
+    parser.add_argument("--no-git", action="store_true",
+                        help="skip git pull/commit/push (local write only)")
+    parser.add_argument("--projects-dir", type=Path, default=DEFAULT_PROJECTS)
+    parser.add_argument("--stats-cache", type=Path, default=DEFAULT_STATS_CACHE)
+    args = parser.parse_args(argv)
+
+    use_git = not args.no_git and not args.dry_run
+    if use_git:
+        run_git(args.repo, "pull", "--rebase")
+
+    scanned = scan_projects(args.projects_dir)
+    if not scanned:
+        raise SystemExit(f"no transcripts found under {args.projects_dir}")
+
+    if args.dry_run:
+        for date in sorted(scanned):
+            c = scanned[date]
+            print(f"{date}  m={c['m']:>6}  s={c['s']:>4}  t={c['t']:>6}")
+        print(f"{len(scanned)} day(s) scanned; nothing written (--dry-run)")
+        return 0
+
+    ledger_path = args.repo / LEDGER_REL
+    ledger = load_ledger(ledger_path)
+
+    if args.seed:
+        boundary = (datetime.fromisoformat(min(scanned)).date()
+                    - timedelta(days=1)).isoformat()
+        with open(args.stats_cache, encoding="utf-8") as fh:
+            cache = json.load(fh)
+        seed_ledger(ledger, cache, boundary)
+        print(f"seeded {boundary} and earlier from {args.stats_cache}")
+
+    changed = upsert_days(ledger, scanned)
+    if not changed and not args.seed:
+        print("no change; ledger untouched")
+        if use_git:
+            sync_git(args.repo, max(scanned))  # still push a stranded commit
+        return 0
+
+    recompute_totals(ledger)
+    ledger["generatedAt"] = datetime.now(MANILA).isoformat(timespec="seconds")
+    write_ledger(ledger_path, ledger)
+    print(f"wrote {ledger_path} through {max(scanned)}")
+    if use_git:
+        sync_git(args.repo, max(scanned))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

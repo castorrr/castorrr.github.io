@@ -351,3 +351,143 @@
     }
   }
 })();
+
+/* ============================================================
+   Claude stats — contribution heatmap
+   Fetches data/claude-activity.json when the section approaches
+   (same IntersectionObserver pattern as the battle boot). On any
+   failure the whole section hides — never a broken layout.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  var section = document.getElementById("claude-stats");
+  if (!section || !window.fetch) return;
+
+  var DAY = 86400000;
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function hideSection() {
+    section.hidden = true;
+    var link = document.querySelector('.nav-link[href="#claude-stats"]');
+    if (link && link.closest("li")) link.closest("li").hidden = true;
+  }
+
+  // All date math in UTC ms so the graph reflects the ledger's Manila days
+  // regardless of the viewer's timezone.
+  function dayMs(iso) { return Date.parse(iso + "T00:00:00Z"); }
+  function isoDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+
+  function quartiles(values) {
+    var sorted = values.slice().sort(function (a, b) { return a - b; });
+    function q(p) { return sorted[Math.floor((sorted.length - 1) * p)]; }
+    return [q(0.25), q(0.5), q(0.75)];
+  }
+
+  function bucket(m, qs) {
+    if (!m) return 0;
+    if (m <= qs[0]) return 1;
+    if (m <= qs[1]) return 2;
+    if (m <= qs[2]) return 3;
+    return 4;
+  }
+
+  function longestStreak(sortedDates) {
+    var max = 0, run = 0, prev = NaN;
+    sortedDates.forEach(function (d) {
+      var ms = dayMs(d);
+      run = (ms - prev === DAY) ? run + 1 : 1;
+      if (run > max) max = run;
+      prev = ms;
+    });
+    return max;
+  }
+
+  function render(data) {
+    if (!data || !data.days || !data.firstDate || !data.generatedAt ||
+        !data.totals) { hideSection(); return; }
+    var days = data.days;
+    var dates = Object.keys(days).sort();
+    if (!dates.length) { hideSection(); return; }
+
+    document.getElementById("cs-sessions").textContent = fmt(data.totals.sessions || 0);
+    document.getElementById("cs-messages").textContent = fmt(data.totals.messages || 0);
+    document.getElementById("cs-active").textContent = fmt(data.totals.activeDays || dates.length);
+    document.getElementById("cs-streak").textContent = longestStreak(dates) + "d";
+
+    // grid runs from the Sunday on/before firstDate through "today" (the
+    // ledger's own generatedAt date — not the viewer's clock)
+    var today = data.generatedAt.slice(0, 10);
+    var start = dayMs(data.firstDate);
+    start -= new Date(start).getUTCDay() * DAY;
+    var end = dayMs(today);
+    // once history exceeds 12 months, clamp to a 53-column rolling year
+    var minStart = end - 52 * 7 * DAY;
+    if (start < minStart) {
+      start = minStart - new Date(minStart).getUTCDay() * DAY;
+    }
+
+    var qs = quartiles(dates.map(function (d) { return days[d].m; })
+                            .filter(function (m) { return m > 0; }));
+
+    var cells = document.getElementById("cs-cells");
+    var monthsRow = document.getElementById("cs-months");
+    var week = 0, lastMonth = -1;
+    for (var ms = start; ms <= end; ms += 7 * DAY, week++) {
+      var sunday = new Date(ms);
+      if (sunday.getUTCMonth() !== lastMonth) {
+        lastMonth = sunday.getUTCMonth();
+        var label = document.createElement("span");
+        label.textContent = MONTHS[lastMonth];
+        label.style.gridColumn = String(week + 1);
+        monthsRow.appendChild(label);
+      }
+      for (var row = 0; row < 7; row++) {
+        var cellMs = ms + row * DAY;
+        var date = isoDate(cellMs);
+        var cell = document.createElement("span");
+        if (cellMs > end || date < data.firstDate) {
+          cell.className = "cs-cell empty";
+        } else {
+          var entry = days[date];
+          var m = entry ? entry.m : 0;
+          cell.className = "cs-cell l" + bucket(m, qs);
+          var d = new Date(cellMs);
+          cell.title = MONTHS[d.getUTCMonth()] + " " + d.getUTCDate() +
+            " · " + fmt(m) + " messages" +
+            " · " + fmt(entry ? entry.s : 0) + " sessions" +
+            " · " + fmt(entry ? entry.t : 0) + " tool calls";
+        }
+        cells.appendChild(cell);
+      }
+    }
+
+    document.getElementById("cs-updated").textContent =
+      "last updated " + today + " · all data since " + data.firstDate;
+
+    // most recent weeks in view first (matters on mobile)
+    var scroller = section.querySelector(".cs-scroll");
+    if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+  }
+
+  function load() {
+    fetch("data/claude-activity.json", { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(render)
+      .catch(hideSection);
+  }
+
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) { io.disconnect(); load(); }
+    }, { rootMargin: "300px 0px" });
+    io.observe(section);
+  } else {
+    load();
+  }
+})();

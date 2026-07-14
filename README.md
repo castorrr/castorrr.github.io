@@ -112,6 +112,15 @@ so the scheduled job always runs merged `main`, not whatever's checked out
 locally) and installs a systemd user timer that runs the update script daily
 at 21:00.
 
+Because the timer is `Persistent=true`, a run missed while the machine is
+off/asleep fires at the next boot or resume — often before the network is up,
+which used to make the opening `git pull` fail and abort the whole run. Two
+guards prevent that now: the service waits (best effort, up to 5 min) for
+`github.com` to resolve before starting, and the script retries each network
+git op and, if the pull still fails, writes and commits the ledger locally
+anyway — the next successful run pushes the stranded commit. A transient
+network blip therefore no longer costs a day of data.
+
 The update script itself does a `git pull --rebase` in that clone at the
 start of every run — but since it's already loaded into memory by the time
 that pull happens, the first run after merging changes to

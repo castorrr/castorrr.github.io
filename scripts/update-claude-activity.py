@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -247,6 +248,32 @@ def run_git(repo, *args):
     return result.stdout.strip()
 
 
+# Spacing between retries of a network git op. A persistent timer catch-up can
+# fire at boot/resume before DNS/network is up; riding out that window here
+# beats failing the whole run. Total wait ~50s across the gaps.
+NET_RETRY_BACKOFF = (5, 15, 30)
+
+
+def run_git_net(repo, *args):
+    """run_git for a network op (pull/push), retrying transient failures."""
+    for attempt in range(len(NET_RETRY_BACKOFF) + 1):
+        try:
+            return run_git(repo, *args)
+        except subprocess.CalledProcessError:
+            if attempt == len(NET_RETRY_BACKOFF):
+                raise
+            delay = NET_RETRY_BACKOFF[attempt]
+            print(f"git {args[0]} failed (attempt {attempt + 1}); "
+                  f"retrying in {delay}s", file=sys.stderr)
+            time.sleep(delay)
+
+
+def run_git_quiet(repo, *args):
+    """Best-effort git op whose failure is expected and ignored."""
+    subprocess.run(["git", "-C", str(repo), *args],
+                   capture_output=True, text=True)
+
+
 def sync_git(repo, max_date):
     """Commit the ledger if the working tree changed, then push if ahead.
 
@@ -259,7 +286,11 @@ def sync_git(repo, max_date):
                 f"chore: update claude activity through {max_date}")
     ahead = int(run_git(repo, "rev-list", "--count", "@{upstream}..HEAD"))
     if ahead:
-        run_git(repo, "push")
+        try:
+            run_git_net(repo, "push")
+        except subprocess.CalledProcessError:
+            print("git push failed after retries; commit is local, next run "
+                  "will push it", file=sys.stderr)
 
 
 def main(argv=None):
@@ -278,7 +309,16 @@ def main(argv=None):
 
     use_git = not args.no_git and not args.dry_run
     if use_git:
-        run_git(args.repo, "pull", "--rebase")
+        try:
+            run_git_net(args.repo, "pull", "--rebase")
+        except subprocess.CalledProcessError:
+            # Don't lose a local update to a transient network/DNS failure:
+            # undo any half-finished rebase, then write + commit locally. The
+            # next run's pull --rebase reconciles and sync_git pushes whatever
+            # is ahead, so the stranded commit heals itself.
+            print("git pull failed after retries; writing locally, push "
+                  "deferred to next run", file=sys.stderr)
+            run_git_quiet(args.repo, "rebase", "--abort")
 
     scanned = scan_projects(args.projects_dir)
     if not scanned:

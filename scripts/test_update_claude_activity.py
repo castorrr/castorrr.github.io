@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 # The script filename has hyphens, so load it via importlib instead of import.
 _MOD_PATH = Path(__file__).with_name("update-claude-activity.py")
@@ -488,6 +489,50 @@ class GitSyncTest(unittest.TestCase):
         # init + first update + token-only update
         self.assertEqual(self._git(self.origin, "rev-list", "--count", "main"),
                          "3")
+
+    def test_run_git_net_retries_then_succeeds(self):
+        calls = []
+
+        def flaky(repo, *args):
+            calls.append(args)
+            if len(calls) < 3:
+                raise subprocess.CalledProcessError(1, ["git", *args])
+            return "ok"
+
+        with mock.patch.object(uca, "run_git", side_effect=flaky), \
+                mock.patch.object(uca.time, "sleep"):
+            self.assertEqual(uca.run_git_net(self.clone, "push"), "ok")
+        self.assertEqual(len(calls), 3)  # two transient failures, then success
+
+    def test_run_git_net_raises_after_exhausting_retries(self):
+        def always_fail(repo, *args):
+            raise subprocess.CalledProcessError(1, ["git", *args])
+
+        with mock.patch.object(uca, "run_git", side_effect=always_fail), \
+                mock.patch.object(uca.time, "sleep") as slept:
+            with self.assertRaises(subprocess.CalledProcessError):
+                uca.run_git_net(self.clone, "pull", "--rebase")
+        self.assertEqual(slept.call_count, len(uca.NET_RETRY_BACKOFF))
+
+    def test_pull_failure_writes_locally_then_heals_next_run(self):
+        # Point origin at a nonexistent repo so pull (and push) fail, as a
+        # boot/resume DNS failure would. Empty backoff keeps the test fast.
+        broken = str(Path(self.tmp.name) / "gone.git")
+        self._git(self.clone, "remote", "set-url", "origin", broken)
+        with mock.patch.object(uca, "NET_RETRY_BACKOFF", ()):
+            self.assertEqual(self.run_cli(), 0)  # does not abort the run
+        # ledger written and committed locally despite the network being down
+        self.assertTrue((self.clone / "data" / "claude-activity.json").exists())
+        self.assertEqual(self._git(self.clone, "log", "-1", "--format=%s"),
+                         "chore: update claude activity through 2026-07-11")
+        # nothing reached origin yet (push deferred)
+        self.assertEqual(self._git(self.origin, "rev-list", "--count", "main"),
+                         "1")
+        # heal: with the remote reachable again the stranded commit pushes
+        self._git(self.clone, "remote", "set-url", "origin", str(self.origin))
+        self.assertEqual(self.run_cli(), 0)
+        self.assertEqual(self._git(self.origin, "rev-parse", "main"),
+                         self._git(self.clone, "rev-parse", "main"))
 
 
 if __name__ == "__main__":

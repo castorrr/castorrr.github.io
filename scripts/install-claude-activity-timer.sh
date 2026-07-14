@@ -25,6 +25,10 @@ Description=Update the Claude Code activity ledger on the portfolio site
 
 [Service]
 Type=oneshot
+# Persistent=true fires missed runs at boot/resume, before NetworkManager has
+# DNS up -- the pull would fail. Wait (best effort) up to 5 min for github.com
+# to resolve; always exit 0 so ExecStart still runs and writes locally.
+ExecStartPre=/bin/sh -c 'i=0; while [ \$i -lt 60 ]; do getent hosts github.com >/dev/null 2>&1 && exit 0; i=\$((i+1)); sleep 5; done; echo "github.com unresolved after 300s; running anyway" >&2; exit 0'
 ExecStart=/usr/bin/python3 $REPO_DIR/scripts/update-claude-activity.py
 EOF
 

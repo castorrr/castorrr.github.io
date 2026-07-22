@@ -86,15 +86,16 @@ through About, Stack, and Projects.
 The `#claude-stats` section (and the live hero stat strip) render
 `data/claude-activity.json` — a ledger of my Claude Code usage maintained by
 `scripts/update-claude-activity.py` on a daily systemd user timer. Each day
-holds `{"m": messages, "s": sessions, "t": toolCalls, "tok": tokens}` (`tok`
-appears once stats-cache has computed that day — typically all but the most
-recent day or two); `tok` and `totals.tokens` are summed per day across
-models from Claude Code's own `~/.claude/stats-cache.json`
-(`dailyModelTokens`), which covers the full history and isn't subject to
-transcript pruning — so the first run after deploy backfills tokens for all
-historic days automatically. If stats-cache is missing or unreadable the
-run simply proceeds without a token merge; existing `tok` values are never
-wiped. The hero strip ships with baked floor-rounded fallbacks (`72K+` /
+holds `{"m": messages, "s": sessions, "t": toolCalls, "tok": tokens}`.
+`tok` and `totals.tokens` are computed live from the transcripts' own
+per-message `usage` data — the sum of `input_tokens + output_tokens` over
+every assistant line (subagents included), bucketed by UTC day, which
+reproduces `/usage`'s `dailyModelTokens` metric exactly. That keeps token
+counts current on every run; Claude Code's `~/.claude/stats-cache.json`
+only refreshes when `/usage` is opened, so it serves purely as the historic
+backfill for days whose transcripts have been pruned. If stats-cache is
+missing or unreadable the run proceeds on transcript tokens alone; existing
+`tok` values are never wiped. The hero strip ships with baked floor-rounded fallbacks (`72K+` /
 `92M+` / `20d+`) that JS swaps for exact values when the JSON loads.
 **Privacy:** only day-level aggregate counts (messages, sessions, tool
 calls, tokens per day) are ever published. No prompts, no conversation

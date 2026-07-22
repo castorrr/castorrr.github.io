@@ -10,6 +10,10 @@ Modes:
   (default)   scan transcripts, upsert recent days, commit + push if changed
   --seed      one-time import of pre-transcript history from stats-cache.json
   --dry-run   print the would-be day counts; write and commit nothing
+
+Token counts are computed live from transcript usage data (matching /usage's
+dailyModelTokens metric), so they stay current without the user ever opening
+/usage; stats-cache.json only backfills days whose transcripts are pruned.
 """
 
 import argparse
@@ -24,6 +28,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 MANILA = ZoneInfo("Asia/Manila")
+UTC = ZoneInfo("UTC")
 DEFAULT_REPO = Path.home() / ".local/share/claude-activity/repo"
 DEFAULT_PROJECTS = Path.home() / ".claude/projects"
 DEFAULT_STATS_CACHE = Path.home() / ".claude/stats-cache.json"
@@ -32,13 +37,21 @@ LEDGER_REL = Path("data/claude-activity.json")
 # ---- scanning ---------------------------------------------------------------
 
 def scan_session_lines(lines):
-    """Count one session file's lines into {"YYYY-MM-DD": {"m": int, "t": int}}.
+    """Scan one session file's lines into (days, tokens).
 
-    A message is a line whose type is user/assistant with isSidechain falsy,
-    bucketed to Asia/Manila by its timestamp. A tool call is a tool_use content
-    block inside a counted assistant message. Malformed lines are skipped.
+    days is {"YYYY-MM-DD": {"m": int, "t": int}}: a message is a line whose
+    type is user/assistant with isSidechain falsy, bucketed to Asia/Manila by
+    its timestamp. A tool call is a tool_use content block inside a counted
+    assistant message. Malformed lines are skipped.
+
+    tokens is {"YYYY-MM-DD": int} and reproduces the metric behind /usage's
+    dailyModelTokens (verified to the token against stats-cache): the sum of
+    usage.input_tokens + usage.output_tokens over EVERY assistant line —
+    sidechains included, cache read/creation tokens and dedup deliberately
+    excluded — bucketed by UTC date, not Manila. Zero-sum days are omitted.
     """
     days = {}
+    tokens = {}
     for raw in lines:
         try:
             entry = json.loads(raw)
@@ -46,45 +59,61 @@ def scan_session_lines(lines):
             continue
         if not isinstance(entry, dict) or entry.get("type") not in ("user", "assistant"):
             continue
-        if entry.get("isSidechain"):
-            continue
         try:
             ts = datetime.fromisoformat(entry["timestamp"])
         except (KeyError, TypeError, ValueError):
+            continue
+        message = entry.get("message")
+        if entry["type"] == "assistant" and isinstance(message, dict):
+            usage = message.get("usage")
+            if isinstance(usage, dict):
+                total = sum(usage.get(k, 0) for k in ("input_tokens", "output_tokens")
+                            if isinstance(usage.get(k), (int, float)))
+                if total:
+                    utc_date = ts.astimezone(UTC).date().isoformat()
+                    tokens[utc_date] = tokens.get(utc_date, 0) + int(total)
+        if entry.get("isSidechain"):
             continue
         date = ts.astimezone(MANILA).date().isoformat()
         day = days.setdefault(date, {"m": 0, "t": 0})
         day["m"] += 1
         if entry["type"] == "assistant":
-            message = entry.get("message")
             content = message.get("content") if isinstance(message, dict) else None
             if isinstance(content, list):
                 day["t"] += sum(
                     1 for block in content
                     if isinstance(block, dict) and block.get("type") == "tool_use"
                 )
-    return days
+    return days, tokens
 
 
 def scan_projects(projects_dir):
-    """Scan all top-level session transcripts into {"date": {"m", "s", "t"}}.
+    """Scan all transcripts into ({"date": {"m", "s", "t"}}, {"date": tokens}).
 
     A session counts once per day it has >=1 message. Subagent transcripts sit
-    one directory deeper than <project>/<session>.jsonl, so this glob skips them.
+    one directory deeper than <project>/<session>.jsonl; they contribute to
+    the token sums only, never to m/s/t — /usage counts their tokens, but the
+    day counts keep first-party messages/sessions semantics.
     """
     days = defaultdict(lambda: {"m": 0, "s": 0, "t": 0})
-    for path in sorted(projects_dir.glob("*/*.jsonl")):
+    tokens = defaultdict(int)
+    top_level = set(projects_dir.glob("*/*.jsonl"))
+    for path in sorted(projects_dir.glob("**/*.jsonl")):
         try:
             with open(path, encoding="utf-8", errors="replace") as fh:
-                session_days = scan_session_lines(fh)
+                session_days, session_tokens = scan_session_lines(fh)
         except OSError as exc:
             print(f"skipping {path}: {exc}", file=sys.stderr)
+            continue
+        for date, tok in session_tokens.items():
+            tokens[date] += tok
+        if path not in top_level:
             continue
         for date, counts in session_days.items():
             days[date]["m"] += counts["m"]
             days[date]["t"] += counts["t"]
             days[date]["s"] += 1
-    return dict(days)
+    return dict(days), dict(tokens)
 
 
 # ---- ledger -----------------------------------------------------------------
@@ -144,9 +173,11 @@ def upsert_days(ledger, scanned, horizon=None):
 def load_daily_tokens(path):
     """Read stats-cache dailyModelTokens into {"YYYY-MM-DD": total_tokens}.
 
-    Token data is best-effort: a missing or unreadable cache returns {} so
-    the run proceeds without a token merge (existing "tok" values are then
-    left untouched by merge_tokens).
+    stats-cache only refreshes when the user opens /usage, so this is purely
+    the historic backfill for days whose transcripts are pruned; recent days
+    come from the transcript scan (see combine_tokens). Token data is
+    best-effort: a missing or unreadable cache returns {} so the run proceeds
+    on transcript tokens alone (existing "tok" values are never wiped).
     """
     try:
         with open(path, encoding="utf-8") as fh:
@@ -169,14 +200,32 @@ def load_daily_tokens(path):
     return tokens
 
 
+def combine_tokens(cache_tokens, transcript_tokens, horizon):
+    """Overlay transcript-derived tokens onto the stats-cache history.
+
+    Transcript values win for dates on/after horizon — they are always
+    current, while stats-cache only refreshes when the user opens /usage.
+    Transcript dates older than horizon are dropped: those transcripts may be
+    partially pruned, and a smaller recount must not clobber a finalized
+    value. A falsy horizon lets transcript values win everywhere.
+    """
+    combined = dict(cache_tokens)
+    for date, tok in transcript_tokens.items():
+        if not horizon or date >= horizon:
+            combined[date] = tok
+    return combined
+
+
 def merge_tokens(ledger, daily_tokens):
     """Merge per-day token totals into existing ledger days as "tok".
 
-    Unlike upsert_days this is exempt from the seededThrough and horizon
-    guards: stats-cache covers the entire history and never regresses from
-    transcript pruning (so the first run after deploy backfills every
-    historic day). Only days already present in the ledger receive "tok" —
-    token-only dates are skipped to keep activeDays semantics intact. A day
+    Unlike upsert_days this is exempt from the seededThrough guard: the
+    combined token map covers the entire history (stats-cache backfill +
+    live transcript scan, see combine_tokens), so the first run after deploy
+    backfills every historic day. Only days already present in the ledger
+    receive "tok" — token-only dates are skipped to keep activeDays
+    semantics intact (token dates are also UTC-bucketed while ledger days
+    are Manila, so an edge day may exist in one and not the other). A day
     absent from daily_tokens keeps any existing "tok" untouched, so token
     data can be added or corrected but never silently wiped.
 
@@ -320,7 +369,7 @@ def main(argv=None):
                   "deferred to next run", file=sys.stderr)
             run_git_quiet(args.repo, "rebase", "--abort")
 
-    scanned = scan_projects(args.projects_dir)
+    scanned, scanned_tokens = scan_projects(args.projects_dir)
     if not scanned:
         raise SystemExit(f"no transcripts found under {args.projects_dir}")
 
@@ -329,6 +378,8 @@ def main(argv=None):
             c = scanned[date]
             print(f"{date}  m={c['m']:>6}  s={c['s']:>4}  t={c['t']:>6}")
         print(f"{len(scanned)} day(s) scanned; nothing written (--dry-run)")
+        for date in sorted(scanned_tokens):
+            print(f"{date}  tok={scanned_tokens[date]:>9}  (UTC day)")
         return 0
 
     ledger_path = args.repo / LEDGER_REL
@@ -345,8 +396,10 @@ def main(argv=None):
     horizon = (datetime.fromisoformat(max(scanned)) - timedelta(days=25)).date().isoformat()
     changed = upsert_days(ledger, scanned, horizon)
     # after upsert/seed so newly created days get tokens in the same run;
-    # exempt from seededThrough/horizon — see merge_tokens docstring
-    tokens_changed = merge_tokens(ledger, load_daily_tokens(args.stats_cache))
+    # exempt from seededThrough — see merge_tokens docstring
+    daily_tokens = combine_tokens(
+        load_daily_tokens(args.stats_cache), scanned_tokens, horizon)
+    tokens_changed = merge_tokens(ledger, daily_tokens)
     if not changed and not tokens_changed and not args.seed:
         print("no change; ledger untouched")
         if use_git:
